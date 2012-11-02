@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Random;
@@ -15,12 +16,13 @@ import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 public class RDFSGenerator implements ITriplesGenerator {
 
 	//Parametry
-	private int maxNumberOfTriples = 0;
-	private int numberOfClasses = 0;
-	private int maxNumberOfSubclasses = 0;
-	private int maxTriplesInOneSubject = 0;
-	private String namespaceName = null;
-	private String namespaceURI = null;
+	private int maxNumberOfTriples = 0;		//max ilosc trojek
+	private int numberOfClasses = 0;		//liczba klas na najwyzszym poziomie
+	private int maxNumberOfSubclasses = 0;  //max liczba podklas jednej klasy
+	private int maxTriplesInOneSubject = 0; //max trojek dla 1 podmiotu
+	private int maxInheritLevel = 0;		//max poziom dziedziczenia
+	private String namespaceName = null;	//nazwa namespace
+	private String namespaceURI = null;		//uri namespace
 	
 	//Ilosc elementow wygenerowanego slownika
 	private int subjects = 0;
@@ -45,21 +47,32 @@ public class RDFSGenerator implements ITriplesGenerator {
 	//Kontener przechowujacy nazwy zadeklarowanych klas
 	private LinkedList<String> availableClasses = new LinkedList<String>();
 	
-	public RDFSGenerator(int triples, int classes, int sclasses, int maxTriplesSubject) {
+	//Tablica przechowujaca nazwy klas na danym poziomie
+	private ArrayList<ArrayList<String>> classesOnLevel = null;
+	
+	public RDFSGenerator(int triples, int classes, int sclasses, int maxTriplesSubject, int inheritLvl) {
 		
 		maxNumberOfTriples = triples;
 		numberOfClasses = classes;
 		maxNumberOfSubclasses = sclasses;
 		maxTriplesInOneSubject = maxTriplesSubject;
+		maxInheritLevel = inheritLvl;
+		
+		classesOnLevel = new ArrayList<ArrayList<String>>();
+		for(int i = 0; i < maxInheritLevel; i++) {
+			classesOnLevel.add(new ArrayList<String>());
+		}
 		
 	}
 	
 	private boolean checkData() {
-		if (maxNumberOfTriples == 0 
-				|| numberOfClasses == 0
-				|| maxNumberOfSubclasses == 0)
+		if (maxNumberOfTriples <= 0 
+				|| numberOfClasses <= 0
+				|| maxNumberOfSubclasses <= 0
+				|| maxInheritLevel <=0 )
 			return false;
-		else return true;
+		else
+			return true;
 	}
 	
 	private void generateDictionary() {
@@ -67,9 +80,9 @@ public class RDFSGenerator implements ITriplesGenerator {
 		subjects = maxNumberOfTriples;
 		predicates = maxNumberOfTriples / 10;
 		values = maxNumberOfTriples * maxTriplesInOneSubject;
-		subclasses = numberOfClasses * maxNumberOfSubclasses;
-		comments = numberOfClasses * subclasses;
-		labels = numberOfClasses * subclasses;
+		subclasses = numberOfClasses * maxNumberOfSubclasses * maxInheritLevel;
+		comments = numberOfClasses * subclasses * maxInheritLevel;
+		labels = numberOfClasses * subclasses * maxInheritLevel;
 		
 		IDictionaryGenerator generator = new DictionaryGenerator(subjects, predicates, values,
 				numberOfClasses, subclasses, labels, comments);
@@ -222,15 +235,17 @@ public class RDFSGenerator implements ITriplesGenerator {
 		
 		result += RDFSyntax.rdfsClassEnding;
 		
+		classesOnLevel.get(0).add( classNames[name] );
+		
 		return result;
 	}
 	
-	private String generateSubclass(int name, int commentLabelIdx, int classIdx) {
+	private String generateSubclass(int name, int commentLabelIdx, String inheritedClass, int currentLvl) {
 		String result = "";
 		
 		result += RDFSyntax.rdfsClass + subclassNames[name] + "\"" + ">\n\t";
 		
-		result += RDFSyntax.rdfsSubClass + classNames[classIdx] + "\"/>\n\t";
+		result += RDFSyntax.rdfsSubClass + inheritedClass + "\"/>\n\t";
 		
 		result += RDFSyntax.rdfsLabel + "\n\t\t";
 		result += labelNames[commentLabelIdx] + "\n\t";
@@ -241,6 +256,8 @@ public class RDFSGenerator implements ITriplesGenerator {
 		result += RDFSyntax.rdfsCommentEnding + "\n";
 		
 		result += RDFSyntax.rdfsClassEnding;
+		
+		classesOnLevel.get(currentLvl).add(subclassNames[name]);
 		
 		return result;
 	}
@@ -317,20 +334,22 @@ public class RDFSGenerator implements ITriplesGenerator {
 		
 		//Generowanie podklas
 		int usedSubclassNames = 0;
-		for(int i = 0; i < numberOfClasses; i++) {
-			
-			Random r = new Random();
-			int subclassesNum = r.nextInt(maxNumberOfSubclasses) + 1;
-			for(int j = 0; j < subclassesNum; j++) {
-				output.println( generateSubclass(usedSubclassNames, usedValueAndCommentNames, i) );
-				usedValueAndCommentNames++;
-				addedClasses++;
-				usedSubclassNames++;
-				availableClasses.add(subclassNames[usedSubclassNames]);
+		for (int lvl = 0; lvl < maxInheritLevel - 1; lvl++) {
+			for (int i = 0; i < classesOnLevel.get(lvl).size(); i++) {
+
+				Random r = new Random();
+				int subclassesNum = r.nextInt(maxNumberOfSubclasses) + 1;
+				for (int j = 0; j < subclassesNum; j++) {
+					output.println(generateSubclass(usedSubclassNames,
+							usedValueAndCommentNames, classesOnLevel.get(lvl).get(i), lvl+1));
+					usedValueAndCommentNames++;
+					addedClasses++;
+					usedSubclassNames++;
+					availableClasses.add(subclassNames[usedSubclassNames]);
+				}
+
 			}
-			
 		}
-		
 		//Generowanie trojek
 		Iterator<String> itr = availableClasses.iterator();
 		int maxNumberOfInstancesOfOneClass = maxNumberOfTriples / availableClasses.size();
