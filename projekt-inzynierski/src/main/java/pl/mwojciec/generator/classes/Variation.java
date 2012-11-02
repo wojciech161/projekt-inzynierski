@@ -6,7 +6,7 @@ import java.io.PrintWriter;
 import java.util.LinkedList;
 
 //Klasa generujaca wariacje liter i zapisujaca je do pliku
-public class Variation {
+class Variation {
 
 	//Parametry
 	private int wordLength;		//Dlugosc slowa w permutacji

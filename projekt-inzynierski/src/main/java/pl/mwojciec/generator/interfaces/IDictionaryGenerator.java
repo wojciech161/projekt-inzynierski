@@ -8,5 +8,8 @@ public interface IDictionaryGenerator {
 	void generateObjectNames();
 	void generateClassNames();
 	void generateSubClassNames();
+	void generateNodeNames();
+	void generateLabelNames();
+	void generateCommentNames();
 	
 }

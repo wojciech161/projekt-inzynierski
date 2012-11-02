@@ -13,7 +13,7 @@ import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 public class SimpleRDFGenerator implements ITriplesGenerator {
 	
 	//Parametry
-	private int numberOfTriples = 0;		// Maksymalna liczbba wygenerowanych trojek
+	private int numberOfTriples = 0;		// Maksymalna liczba wygenerowanych trojek
 	private int numberOfSubjects = 0;		// liczba generowanych podmiotow
 	private int numberOfPredicates = 0;		// liczba generowanych predykatow
 	private int numberOfValues = 0;			// liczba generowanych wartosci
@@ -26,11 +26,17 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 	private String report = "";
 	
 	//Tablice przechowujace nazwy
-	String[] subjectNames = null;
-	String[] predicateNames = null;
-	String[] valueNames = null;
+	private String[] subjectNames = null;
+	private String[] predicateNames = null;
+	private String[] valueNames = null;
 	
-	public SimpleRDFGenerator() {
+	public SimpleRDFGenerator(int triples, int subjects, int predicates, int values, int maxTriplesSubject) {
+		
+		numberOfTriples = triples;
+		numberOfSubjects = subjects;
+		numberOfPredicates = predicates;
+		numberOfValues = values;
+		maxTriplesForSubject = maxTriplesSubject;
 		
 	}
 	
@@ -224,26 +230,6 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 		
 		namespaceURI = uri;
 		
-	}
-	
-	public void setNumberOfTriples( int triples ) {
-		numberOfTriples = triples;
-	}
-	
-	public void setNumberOfSubjects( int subjects ) {
-		numberOfSubjects = subjects;
-	}
-	
-	public void setNumberOfPredicates( int predicates ) {
-		numberOfPredicates = predicates;
-	}
-	
-	public void setNumberOfValues(int values) {
-		numberOfValues = values;
-	}
-	
-	public void setMaxTriplesForSubject ( int max ) {
-		maxTriplesForSubject = max;
 	}
 	
 }
