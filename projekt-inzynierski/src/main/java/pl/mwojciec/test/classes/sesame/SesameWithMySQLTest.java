@@ -2,6 +2,7 @@ package pl.mwojciec.test.classes.sesame;
 
 import java.io.File;
 
+import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class SesameWithMySQLTest implements ITest {
@@ -47,6 +48,18 @@ public class SesameWithMySQLTest implements ITest {
 	}
 
 	public void setQueriesFile(File queries) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setNamespaceName(String ns) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setGenerator(ITriplesGenerator g) {
 		// TODO Auto-generated method stub
 		
 	}

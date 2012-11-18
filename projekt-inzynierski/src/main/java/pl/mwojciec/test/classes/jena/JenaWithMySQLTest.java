@@ -1,6 +1,8 @@
 package pl.mwojciec.test.classes.jena;
 
 import java.io.File;
+
+import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class JenaWithMySQLTest implements ITest {
@@ -46,6 +48,18 @@ public class JenaWithMySQLTest implements ITest {
 	}
 
 	public void setQueriesFile(File queries) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setNamespaceName(String ns) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setGenerator(ITriplesGenerator g) {
 		// TODO Auto-generated method stub
 		
 	}

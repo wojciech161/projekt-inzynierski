@@ -2,6 +2,8 @@ package pl.mwojciec.test.interfaces;
 
 import java.io.File;
 
+import pl.mwojciec.generator.interfaces.ITriplesGenerator;
+
 public interface ITest {
 
 	// Funkcje ladujace plik z trojkami, raporty czasu ladowania i zajetosci
@@ -15,5 +17,9 @@ public interface ITest {
 	void getQueryTimeReport(int queryNumber);
 	void getqueryResult(int queryNumber);
 	void getAllQueriesTimeReport();
+	
+	//Settery wspolnych parametrow
+	void setNamespaceName(String ns);
+	void setGenerator(ITriplesGenerator g);
 	
 }

@@ -7,11 +7,13 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
 import pl.mwojciec.generator.interfaces.IDictionaryGenerator;
 import pl.mwojciec.generator.interfaces.ITriplesGenerator;
+import pl.mwojciec.helpers.Pair;
 
 public class RDFSGenerator implements ITriplesGenerator {
 
@@ -50,6 +52,12 @@ public class RDFSGenerator implements ITriplesGenerator {
 	//Tablica przechowujaca nazwy klas na danym poziomie
 	private ArrayList<ArrayList<String>> classesOnLevel = null;
 	
+	//Kontenery pomocnicze do zapytan
+	List<String> usedSubjects;
+	List<String> usedPredicates;
+	List<String> usedClasses;
+	List<List<String>> usedSubclasses;
+	
 	public RDFSGenerator(int triples, int classes, int sclasses, int maxTriplesSubject, int inheritLvl) {
 		
 		maxNumberOfTriples = triples;
@@ -61,6 +69,15 @@ public class RDFSGenerator implements ITriplesGenerator {
 		classesOnLevel = new ArrayList<ArrayList<String>>();
 		for(int i = 0; i < maxInheritLevel; i++) {
 			classesOnLevel.add(new ArrayList<String>());
+		}
+		
+		usedSubjects = new ArrayList<String>();
+		usedPredicates = new ArrayList<String>();
+		usedClasses = new ArrayList<String>();
+		usedSubclasses = new ArrayList<List<String>>();
+		
+		for(int i = 0; i < sclasses; i++) {
+			usedSubclasses.add(new ArrayList<String>());
 		}
 		
 	}
@@ -236,6 +253,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 		result += RDFSyntax.rdfsClassEnding;
 		
 		classesOnLevel.get(0).add( classNames[name] );
+		usedClasses.add(classNames[name]);
 		
 		return result;
 	}
@@ -258,6 +276,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 		result += RDFSyntax.rdfsClassEnding;
 		
 		classesOnLevel.get(currentLvl).add(subclassNames[name]);
+		usedSubclasses.get(currentLvl).add(subclassNames[name]);
 		
 		return result;
 	}
@@ -269,6 +288,8 @@ public class RDFSGenerator implements ITriplesGenerator {
 				+ valueNames[value] + "</"
 				+ namespaceName + ":"
 				+ predicateNames[predicate] + ">";
+		
+		usedPredicates.add(predicateNames[predicate]);
 		
 		return result;
 	}
@@ -286,6 +307,8 @@ public class RDFSGenerator implements ITriplesGenerator {
 		}
 		
 		result += "</" + className + ">";
+		
+		usedSubjects.add(name);
 		
 		return result;
 	}
@@ -406,6 +429,31 @@ public class RDFSGenerator implements ITriplesGenerator {
 	public void setNamespaceURI(String uri) {
 		namespaceURI = uri;
 
+	}
+
+	@Override
+	public List<String> getUsedSubjects() {
+		return usedSubjects;
+	}
+
+	@Override
+	public List<String> getUsedPredicates() {
+		return usedPredicates;
+	}
+
+	@Override
+	public List<Pair<String, String>> getSubjectAndPredicateFromLastLevel() {
+		return null;
+	}
+
+	@Override
+	public List<String> getUsedClasses() {
+		return usedClasses;
+	}
+
+	@Override
+	public List<List<String>> getUsedSubclasses() {
+		return usedSubclasses;
 	}
  
 }

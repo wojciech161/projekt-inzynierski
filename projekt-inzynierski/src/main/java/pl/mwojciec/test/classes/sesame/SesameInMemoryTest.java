@@ -11,6 +11,7 @@ import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFParseException;
 import org.openrdf.sail.memory.MemoryStore;
 
+import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class SesameInMemoryTest implements ITest {
@@ -89,6 +90,18 @@ public class SesameInMemoryTest implements ITest {
 	}
 
 	public void setQueriesFile(File queries) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setNamespaceName(String ns) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setGenerator(ITriplesGenerator g) {
 		// TODO Auto-generated method stub
 		
 	}

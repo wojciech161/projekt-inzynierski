@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
 import pl.mwojciec.generator.interfaces.IDictionaryGenerator;
 import pl.mwojciec.generator.interfaces.ITriplesGenerator;
+import pl.mwojciec.helpers.Pair;
 
 public class SimpleRDFGenerator implements ITriplesGenerator {
 	
@@ -29,6 +31,11 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 	private String[] subjectNames = null;
 	private String[] predicateNames = null;
 	private String[] valueNames = null;
+	
+	//Kontenery do funkcji pomocniczych przy zapytaniach
+	private List<String> usedSubjects;
+	private List<String> usedPredicates;
+	private List<Pair<String, String>> usedSubjectsPredicates;
 	
 	public SimpleRDFGenerator(int triples, int subjects, int predicates, int values, int maxTriplesSubject) {
 		
@@ -173,6 +180,10 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 				
 				output.println( generateOneTriple(predicateName, valueName) );
 				
+				usedSubjects.add(subjectNames[addedSubjects]);
+				usedPredicates.add(predicateNames[predicateName]);
+				usedSubjectsPredicates.add(new Pair<String, String>(subjectNames[addedSubjects], predicateNames[predicateName]));
+				
 				addedTriples++;
 			}
 			
@@ -230,6 +241,31 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 		
 		namespaceURI = uri;
 		
+	}
+
+	@Override
+	public List<String> getUsedSubjects() {
+		return usedSubjects;
+	}
+
+	@Override
+	public List<String> getUsedPredicates() {
+		return usedPredicates;
+	}
+
+	@Override
+	public List<Pair<String, String>> getSubjectAndPredicateFromLastLevel() {
+		return usedSubjectsPredicates;
+	}
+
+	@Override
+	public List<String> getUsedClasses() {
+		return null;
+	}
+
+	@Override
+	public List<List<String>> getUsedSubclasses() {
+		return null;
 	}
 	
 }

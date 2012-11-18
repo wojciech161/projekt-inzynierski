@@ -2,6 +2,7 @@ package pl.mwojciec.test.classes.sesame;
 
 import java.io.File;
 
+import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class SesameNativeTest implements ITest {
@@ -52,6 +53,18 @@ public class SesameNativeTest implements ITest {
 	}
 
 	public void executeQueries() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setNamespaceName(String ns) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setGenerator(ITriplesGenerator g) {
 		// TODO Auto-generated method stub
 		
 	}

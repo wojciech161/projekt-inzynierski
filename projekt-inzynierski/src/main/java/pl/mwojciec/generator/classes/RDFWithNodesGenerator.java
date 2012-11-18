@@ -4,11 +4,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
 import pl.mwojciec.generator.interfaces.IDictionaryGenerator;
 import pl.mwojciec.generator.interfaces.ITriplesGenerator;
+import pl.mwojciec.helpers.Pair;
 
 public class RDFWithNodesGenerator implements ITriplesGenerator {
 
@@ -42,12 +45,23 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 	private int numberOfTriplesInsideNodes = 0;
 	private int generatedMainTriples = 0;
 	
+	//Kontenery do pomocnikow zapytan w testach
+	private ArrayList<String> usedSubjects;
+	private ArrayList<String> usedPredicates;
+	private List<Pair<String, String>> usedSubjectsPredicates;
+	//private List<Pair<String, String>> usedPredicateObjects;
+	
 	public RDFWithNodesGenerator(int triples, int levels, int maxTriplesInSubject) {
 		
 		maxNumberOfTriples = triples;
 		maxNumberOfLevels = levels;
 		maxNumberOfTriplesInOneSubject = maxTriplesInSubject;
 		
+		usedSubjects = new ArrayList<String>();
+		usedPredicates = new ArrayList<String>();
+		usedSubjectsPredicates = new ArrayList<Pair<String,String>>();
+		
+		//usedPredicateObjects = new ArrayList<Pair<String,String>>();
 	}
 	
 	//Funkcja sprawdzajaca poprawnosc parametrow
@@ -170,6 +184,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 						+ namespaceName + ":"
 						+ predicateNames[predicateNumber] + ">\n";
 				numberOfTriplesInsideNodes++;
+				//usedPredicateObjects.add(new Pair<String, String>(name, predicateNames[valueNumber]));
 			}
 			
 			result += RDFSyntax.rdfDescriptionEnding;
@@ -213,11 +228,25 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 			int nodeNumber = r.nextInt(usedNodes[levelNumber].length);
 			int predicateNumber = r.nextInt(predicates);
 			
+			usedSubjects.add(subjectNames[subject]);
+			usedPredicates.add(predicateNames[predicateNumber]);
+			
 			result += "\t<" + namespaceName + ":"
 						+ predicateNames[predicateNumber] + " "
 						+ RDFSyntax.rdfNodeId
 						+ "\"" + usedNodes[levelNumber][nodeNumber]
 						+ "\"/>\n";
+			
+			usedSubjectsPredicates.add(new Pair<String, String>(subjectNames[subject], predicateNames[predicateNumber]));
+			
+			/*if(levelNumber == 0) {
+				String nodeName = usedNodes[levelNumber][nodeNumber];
+				for(int itr = 0; itr < usedPredicateObjects.size(); itr++) {
+					if(usedPredicateObjects.get(itr).first.equals(nodeName)) {
+						usedSubjectsPredicates.add(new Pair<String, String>(subjectNames[subject], usedPredicateObjects.get(itr).second));
+					}
+				}
+			}*/
 			
 			generatedMainTriples++;
 		}
@@ -310,6 +339,31 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 
 	public void setNamespaceURI(String uri) {
 		namespaceURI = uri;
+	}
+
+	@Override
+	public List<String> getUsedSubjects() {
+		return usedSubjects;
+	}
+
+	@Override
+	public List<String> getUsedPredicates() {
+		return usedPredicates;
+	}
+
+	@Override
+	public List<Pair<String, String>> getSubjectAndPredicateFromLastLevel() {
+		return usedSubjectsPredicates;
+	}
+
+	@Override
+	public List<String> getUsedClasses() {
+		return null;
+	}
+
+	@Override
+	public List<List<String>> getUsedSubclasses() {
+		return null;
 	}
 
 }
