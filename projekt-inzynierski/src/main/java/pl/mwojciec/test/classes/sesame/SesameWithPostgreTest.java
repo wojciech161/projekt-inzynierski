@@ -16,7 +16,7 @@ public class SesameWithPostgreTest implements ITest {
 		return null;
 	}
 
-	public String getMemeoryLoadReport() {
+	public String getMemoryLoadReport() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -31,17 +31,20 @@ public class SesameWithPostgreTest implements ITest {
 
 	}
 
-	public void getQueryTimeReport(int queryNumber) {
+	public String getQueryTimeReport(int queryNumber) {
+		return null;
 		// TODO Auto-generated method stub
 
 	}
 
-	public void getqueryResult(int queryNumber) {
+	public String getqueryResult(int queryNumber) {
+		return null;
 		// TODO Auto-generated method stub
 
 	}
 
-	public void getAllQueriesTimeReport() {
+	public String getAllQueriesTimeReport() {
+		return null;
 		// TODO Auto-generated method stub
 
 	}

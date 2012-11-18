@@ -2,6 +2,9 @@ package pl.mwojciec.test.classes.jena;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -24,6 +27,12 @@ public class JenaInMemoryTest implements ITest {
 	private ITriplesGenerator generator;
 	private String namespaceName;
 	
+	//Kontenery do raportow
+	private List<String> loadTimeReport = new ArrayList<String>();
+	private List<String> memoryUsageReport = new ArrayList<String>();
+	private List<String> queryTimeReport = new ArrayList<String>();
+	private List<String> queryResults = new ArrayList<String>();
+	
 	public JenaInMemoryTest() {
 		model = ModelFactory.createDefaultModel();
 	}
@@ -41,13 +50,27 @@ public class JenaInMemoryTest implements ITest {
 	}
 
 	public String getLoadTimeReport() {
-		// TODO Auto-generated method stub
-		return null;
+		String result = new String();
+		
+		Iterator<String> iter = loadTimeReport.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
 	}
 
-	public String getMemeoryLoadReport() {
-		// TODO Auto-generated method stub
-		return null;
+	public String getMemoryLoadReport() {
+		String result = new String();
+		
+		Iterator<String> iter = memoryUsageReport.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
 	}
 
 	public void printRDFFile() {
@@ -58,8 +81,7 @@ public class JenaInMemoryTest implements ITest {
 	
 	public void executeQueries() {
 		// Zapytanie 1 - zapytanie o podmiot
-		if(generator != null)
-			executeQuery1(namespaceName + "/" + generator.getUsedSubjects().get(0));
+		executeQuery1(namespaceName + "/" + generator.getUsedSubjects().get(0));
 		
 		//Zapytanie 2 - zapytanie o podmiot i wydobycie z niego informacji
 		executeQuery2(namespaceName + "/" + generator.getUsedSubjects().get(0));
@@ -76,21 +98,32 @@ public class JenaInMemoryTest implements ITest {
 		
 		//Zapytanie 6 - Dodanie do podanego podmiotu trojki
 		executeQuery6(namespaceName + "/" + generator.getUsedSubjects().get(0));
+		
+		//Zapytanie 7 - Rekursywne wypisanie wszystkich atrybutow z node'ow podajac predykat
+		executeQuery7(namespaceName + "/" + generator.getUsedSubjects().get(0));
 	}
 
-	public void getQueryTimeReport(int queryNumber) {
-		// TODO Auto-generated method stub
-		
+	public String getQueryTimeReport(int queryNumber) {
+		return queryTimeReport.get(queryNumber);
 	}
 
-	public void getqueryResult(int queryNumber) {
-		// TODO Auto-generated method stub
-		
+	public String getqueryResult(int queryNumber) {
+		return queryResults.get(queryNumber);
 	}
 
-	public void getAllQueriesTimeReport() {
-		// TODO Auto-generated method stub
+	public String getAllQueriesTimeReport() {
+		String result = new String();
+		int queryNumber = 1;
 		
+		Iterator<String> iter = queryTimeReport.iterator();
+		
+		while( iter.hasNext() ) {
+			String resNum = "Zapytanie " + queryNumber + "\n";
+			result += resNum + iter.next() + "\n";
+			++queryNumber;
+		}
+		
+		return result;
 	}
 
 	public void setQueriesFile(File queries) {
@@ -109,36 +142,59 @@ public class JenaInMemoryTest implements ITest {
 	//Prywatne funkcje pomocnicze do zapytan
 	
 	private void executeQuery1(String resourceName) {
-		System.out.println("Zapytanie o podmiot " + resourceName);
+		String result = new String();
+		
+		result += ("Zapytanie o podmiot " + resourceName + "\n");
 		Resource r1 = model.getResource(resourceName);
-		System.out.println(r1.toString());
+		result += (r1.toString() + "\n");
+		
+		queryResults.add(result);
 	}
 	
 	private void executeQuery2(String resourceName) {
-		System.out.println("Wyswietlenie wszystkich obiektow podmiotu rekurencyjnie po calym drzewie");
-		Resource r2 = model.getResource(resourceName);
-		System.out.println(r2.toString());
-		getNodeIdObjects(r2);
+		String result = new String();
+		
+		Resource r = model.getResource(resourceName);
+		
+		StmtIterator iter = r.listProperties();
+		while(iter.hasNext()) {
+			Statement currentStatement = iter.nextStatement();
+			Resource currentSubject = currentStatement.getSubject();
+			Property currentPredicate = currentStatement.getPredicate();
+			RDFNode currentObject = currentStatement.getObject();
+			result += ( "Obiekt: [" +
+						currentSubject.toString() + ", " +
+						currentPredicate.toString() + ", " +
+						currentObject.toString() + "]\n" );
+		}
+		
+		queryResults.add(result);
 	}
 	
 	private void executeQuery3(String predicateName) {
-		System.out.println("Wylistowanie trojek posiadajacych predykat " + predicateName);
+		String result = new String();
+		
+		result += ("Wylistowanie trojek posiadajacych predykat " + predicateName + "\n");
 		Property propertyForQuery3 = model.createProperty(predicateName);
 		ResIterator resIter = model.listResourcesWithProperty(propertyForQuery3);
 		if(resIter.hasNext()) {
 			while(resIter.hasNext()) {
 				Resource foundResource = resIter.nextResource();
-				System.out.println( foundResource.getRequiredProperty(propertyForQuery3).toString() );
+				result += ( foundResource.getRequiredProperty(propertyForQuery3).toString() + "\n" );
 			}
 		}
 		else {
-			System.out.println("Brak obiektow o podanej nazwie");
+			result += ("Brak obiektow o podanej nazwie\n");
 		}
+		
+		queryResults.add(result);
 	}
 	
 	private void executeQuery4(String resourceName, String predicateName) {
-		System.out.println("Odnalezienie trojki o podmiocie "
-				+ resourceName + " oraz predykacie " + predicateName);
+		String result = new String();
+		
+		result += ("Odnalezienie trojki o podmiocie "
+				+ resourceName + " oraz predykacie " + predicateName + "\n");
 		Resource r4 = model.createResource(resourceName);
 		Property propertyForQuery4 = model.createProperty(predicateName);
 		Selector selectorQuery4 = new SimpleSelector(r4, propertyForQuery4, (RDFNode)null);
@@ -149,12 +205,14 @@ public class JenaInMemoryTest implements ITest {
 				Resource res = currentStatement.getResource();
 				Property prop = currentStatement.getPredicate();
 				RDFNode node = currentStatement.getObject();
-				System.out.println("[" + res.toString() + ", " + prop.toString() + ", " + node.toString() + "]");
+				result += ("[" + res.toString() + ", " + prop.toString() + ", " + node.toString() + "]\n");
 			}
 		}
 		else {
-			System.out.println("Nie znaleziono trojek o podanych parametrach");
+			result += ("Nie znaleziono trojek o podanych parametrach\n");
 		}
+		
+		queryResults.add(result);
 	}
 	
 	/*private void executeQuery5(String predicateName, String valueName) {
@@ -178,16 +236,20 @@ public class JenaInMemoryTest implements ITest {
 	}*/
 	
 	private void executeQuery6(String resourceName) {
-		System.out.println("Dodanie do podmiotu " + resourceName + " kolejnej trojki");
+		String result = new String();
+		
+		result += ("Dodanie do podmiotu " + resourceName + " kolejnej trojki\n");
 		
 		Resource r = model.getResource(resourceName);
 
 		r.addProperty(model.createProperty("NewProperty"), "NewValue");
 		
-		System.out.println("Dodawanie zakonczone pomyslnie");
+		result += ("Dodawanie zakonczone pomyslnie\n");
+		
+		queryResults.add(result);
 	}
 	
-	private void getNodeIdObjects(Resource r) {
+	private void getNodeIdObjects(Resource r, String result) {
 		StmtIterator iter = r.listProperties();
 		while(iter.hasNext()) {
 			Statement currentStatement = iter.nextStatement();
@@ -195,20 +257,31 @@ public class JenaInMemoryTest implements ITest {
 			Property currentPredicate = currentStatement.getPredicate();
 			RDFNode currentObject = currentStatement.getObject();
 			if( currentObject.isResource() ) {
-				System.out.println("NodeId [" +
+				result += ("NodeId [" +
 						currentSubject.toString() + ", " +
 						currentPredicate.toString() + ", " +
-						currentObject.toString() + "]");
+						currentObject.toString() + "]\n");
 				Resource rNext = (Resource)currentObject;
-				getNodeIdObjects(rNext);
+				getNodeIdObjects(rNext, result);
 			}
 			else {
-				System.out.println( "Obiekt: [" +
+				result += ( "Obiekt: [" +
 						currentSubject.toString() + ", " +
 						currentPredicate.toString() + ", " +
-						currentObject.toString() + "]" );
+						currentObject.toString() + "]\n" );
 			}
 		}
+	}
+	
+	private void executeQuery7(String resourceName) {
+		String result = new String();
+		
+		result += ("Wyswietlenie wszystkich trojek zwiazanych z podmiotem\n");
+		Resource r2 = model.getResource(resourceName);
+		result += (r2.toString() + "\n");
+		getNodeIdObjects(r2, result);
+		
+		queryResults.add(result);
 	}
 	
 }
