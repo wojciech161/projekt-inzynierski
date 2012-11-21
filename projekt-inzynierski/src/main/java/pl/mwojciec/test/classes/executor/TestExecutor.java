@@ -1,10 +1,11 @@
 package pl.mwojciec.test.classes.executor;
 
+import java.io.File;
+
 import pl.mwojciec.generator.classes.RDFWithNodesGenerator;
 import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 import pl.mwojciec.test.classes.jena.JenaInMemoryTest;
-import pl.mwojciec.test.classes.sesame.SesameInMemoryTest;
-import pl.mwojciec.test.classes.sesame.SesameNativeTest;
+import pl.mwojciec.test.classes.jena.JenaWithMySQLTest;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class TestExecutor {
@@ -21,33 +22,26 @@ public class TestExecutor {
 		generator.setNamespaceName("mw");
 		generator.setNamespaceURI("http://www.mwojciec.pl");
 		generator.generate();
+		generator.generateQueriesFile();
 	}
 	
 	public void executeTest() {
-		//Test Jena InMemory
-		System.out.println("Test JenaInMemory");
+		
+		//Jena InMemory Test
+		
+		System.out.println("Test Jena InMemory");
 		test = new JenaInMemoryTest();
-		test.setNamespaceName("http://www.mwojciec.pl");
-		test.setGenerator(generator);
 		test.loadRepository();
-		//((JenaInMemoryTest)test).printRDFFile();
+		test.setQueriesFile(new File("SparqlQueries.txt"));
 		test.executeQueries();
 		
-		//Test Sesame InMemory
-		System.out.println("Test SesameInMemory");
-		test = new SesameInMemoryTest();
-		test.setNamespaceName("http://www.mwojciec.pl");
-		test.setGenerator(generator);
+		//Jena with MySQL test
+		System.out.println("Test Jena MySQL");
+		test = new JenaWithMySQLTest();
 		test.loadRepository();
+		test.setQueriesFile(new File("SparqlQueries.txt"));
 		test.executeQueries();
 		
-		//Test sesame native
-		System.out.println("Test SesameNative");
-		test = new SesameNativeTest();
-		test.setNamespaceName("http://www.mwojciec.pl");
-		test.setGenerator(generator);
-		test.loadRepository();
-		test.executeQueries();
 	}
 	
 	public String getReport() {

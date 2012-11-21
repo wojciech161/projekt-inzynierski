@@ -5,13 +5,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
 import pl.mwojciec.generator.interfaces.IDictionaryGenerator;
 import pl.mwojciec.generator.interfaces.ITriplesGenerator;
-import pl.mwojciec.helpers.Pair;
+import pl.mwojciec.helpers.Triple;
 
 public class RDFWithNodesGenerator implements ITriplesGenerator {
 
@@ -45,23 +46,14 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 	private int numberOfTriplesInsideNodes = 0;
 	private int generatedMainTriples = 0;
 	
-	//Kontenery do pomocnikow zapytan w testach
-	private ArrayList<String> usedSubjects;
-	private ArrayList<String> usedPredicates;
-	private List<Pair<String, String>> usedSubjectsPredicates;
-	//private List<Pair<String, String>> usedPredicateObjects;
+	//Zmienne do generacji zapytan
+	List<Triple> usedTriples = new ArrayList<Triple>();
 	
 	public RDFWithNodesGenerator(int triples, int levels, int maxTriplesInSubject) {
 		
 		maxNumberOfTriples = triples;
 		maxNumberOfLevels = levels;
 		maxNumberOfTriplesInOneSubject = maxTriplesInSubject;
-		
-		usedSubjects = new ArrayList<String>();
-		usedPredicates = new ArrayList<String>();
-		usedSubjectsPredicates = new ArrayList<Pair<String,String>>();
-		
-		//usedPredicateObjects = new ArrayList<Pair<String,String>>();
 	}
 	
 	//Funkcja sprawdzajaca poprawnosc parametrow
@@ -228,25 +220,13 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 			int nodeNumber = r.nextInt(usedNodes[levelNumber].length);
 			int predicateNumber = r.nextInt(predicates);
 			
-			usedSubjects.add(subjectNames[subject]);
-			usedPredicates.add(predicateNames[predicateNumber]);
-			
 			result += "\t<" + namespaceName + ":"
 						+ predicateNames[predicateNumber] + " "
 						+ RDFSyntax.rdfNodeId
 						+ "\"" + usedNodes[levelNumber][nodeNumber]
 						+ "\"/>\n";
 			
-			usedSubjectsPredicates.add(new Pair<String, String>(subjectNames[subject], predicateNames[predicateNumber]));
-			
-			/*if(levelNumber == 0) {
-				String nodeName = usedNodes[levelNumber][nodeNumber];
-				for(int itr = 0; itr < usedPredicateObjects.size(); itr++) {
-					if(usedPredicateObjects.get(itr).first.equals(nodeName)) {
-						usedSubjectsPredicates.add(new Pair<String, String>(subjectNames[subject], usedPredicateObjects.get(itr).second));
-					}
-				}
-			}*/
+			usedTriples.add(new Triple( subjectNames[subject], predicateNames[predicateNumber], usedNodes[levelNumber][nodeNumber] ));
 			
 			generatedMainTriples++;
 		}
@@ -342,28 +322,85 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 	}
 
 	@Override
-	public List<String> getUsedSubjects() {
-		return usedSubjects;
-	}
-
-	@Override
-	public List<String> getUsedPredicates() {
-		return usedPredicates;
-	}
-
-	@Override
-	public List<Pair<String, String>> getSubjectAndPredicateFromLastLevel() {
-		return usedSubjectsPredicates;
-	}
-
-	@Override
-	public List<String> getUsedClasses() {
-		return null;
-	}
-
-	@Override
-	public List<List<String>> getUsedSubclasses() {
-		return null;
+	public void generateQueriesFile() {
+		List<String> sparqlQueries = new ArrayList<String>();
+		List<String> serqlQueries = new ArrayList<String>();
+		
+		String queryString;
+		Random r = new Random();
+		
+		//Zapytanie 1 - zapytanie o podmiot i wydobycie z niego informacji
+		int tripleNumber = r.nextInt(usedTriples.size());
+		queryString = "SELECT x, y, z FROM {x} y {z} WHERE x LIKE \"*" + usedTriples.get(tripleNumber).subject + "\" USING NAMESPACE "
+				+ namespaceName + " = <" + namespaceURI + "#>";
+		serqlQueries.add(queryString);
+		
+		queryString = "SELECT ?predicate ?value WHERE {<" + namespaceURI + "/" + usedTriples.get(tripleNumber).subject + "> ?predicate ?value}";
+		sparqlQueries.add(queryString);
+		
+		//Zapytanie 2 - wylistowanie wszystkich obiektow o podanym predykacie
+		tripleNumber = r.nextInt(usedTriples.size());
+		queryString = "SELECT x, y FROM {x} "
+		+ namespaceName + ":" + usedTriples.get(tripleNumber).predicate
+		+ " {y} USING NAMESPACE "
+				+ namespaceName + " = <" + namespaceURI + "#>";
+		serqlQueries.add(queryString);
+		
+		queryString = "SELECT ?subject ?value WHERE {?subject " + "<" + namespaceURI + "#" + usedTriples.get(tripleNumber).predicate + "> ?value}";
+		sparqlQueries.add(queryString);
+		
+		//Zapytanie 3 - Odnalezienie trojki podajac podmiot i predykat
+		tripleNumber = r.nextInt(usedTriples.size());
+		queryString = "SELECT x, y FROM {x} "
+				+ namespaceName + ":" + usedTriples.get(tripleNumber).predicate
+				+ " {y} WHERE x LIKE \"*" + usedTriples.get(tripleNumber).subject
+				+ "\" USING NAMESPACE "
+				+ namespaceName + " = <" + namespaceURI + "#>";
+		serqlQueries.add(queryString);
+		
+		queryString = "SELECT ?value WHERE {<" + namespaceURI + "/" + usedTriples.get(tripleNumber).subject + 
+				"> " + "<" + namespaceURI + "#" + usedTriples.get(tripleNumber).predicate + "> ?value}";
+		sparqlQueries.add(queryString);
+		
+		//Zapytanie 5 - Dodanie do podanego podmiotu trojki
+		
+		//Generowanie pliku Serql
+		File serqlQueriesFile = new File("SerqlQueries.txt");
+		Iterator<String> iter = serqlQueries.iterator();
+		try {
+			serqlQueriesFile.createNewFile();
+			PrintWriter output = new PrintWriter(serqlQueriesFile);
+			
+			while(iter.hasNext()) {
+				output.println(iter.next());
+			}
+			
+			output.close();
+			
+		} catch (IOException e) {
+			System.err.println("error when creating a new file.");
+			e.printStackTrace();
+		}
+		
+		//generowanie pliku sparql
+		File sparqlQueriesFile = new File("SparqlQueries.txt");
+		Iterator<String> it = sparqlQueries.iterator();
+		try {
+			sparqlQueriesFile.createNewFile();
+			PrintWriter output = new PrintWriter(sparqlQueriesFile);
+			
+			while(it.hasNext()) {
+				//System.out.println(it.next());
+				output.println(it.next());
+			}
+			
+			output.close();
+			
+		} catch(IOException e) {
+			System.err.println("Error when creating file");
+			e.printStackTrace();
+		}
+		
 	}
 
 }

@@ -1,13 +1,14 @@
 package pl.mwojciec.test.classes.sesame;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 
 import org.openrdf.OpenRDFException;
-import org.openrdf.model.Value;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQuery;
@@ -20,14 +21,11 @@ import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFParseException;
 import org.openrdf.sail.nativerdf.NativeStore;
 
-import pl.mwojciec.generator.interfaces.ITriplesGenerator;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class SesameNativeTest implements ITest {
 	
 	private Repository repository;
-	private ITriplesGenerator generator;
-	private String namespaceName;
 	
 	//Kontenery do raportow
 	private List<String> loadTimeReport = new ArrayList<String>();
@@ -35,6 +33,9 @@ public class SesameNativeTest implements ITest {
 	private List<String> queryTimeReport = new ArrayList<String>();
 	private List<String> queryResults = new ArrayList<String>();
 
+	//Zapytania
+	private List<String> queryList = new ArrayList<String>();
+	
 	public void loadRepository() {
 		File dataDir = new File("SesameNativeDB/");
 		repository = new SailRepository(new NativeStore(dataDir));
@@ -121,202 +122,57 @@ public class SesameNativeTest implements ITest {
 	}
 
 	public void setQueriesFile(File queries) {
-		// TODO Auto-generated method stub
+		try {
+			Scanner input = new Scanner(queries);
+			
+			while(input.hasNext()) {
+				queryList.add(input.nextLine());
+			}
+			
+			input.close();
+		} catch(FileNotFoundException e) {
+			System.out.println("File with queries not found.");
+			e.printStackTrace();
+		}
 		
 	}
 
 	public void executeQueries() {
-		// Zapytanie 1 - zapytanie o podmiot
-		executeQuery1(generator.getUsedSubjects().get(0));
+		Iterator<String> iter = queryList.iterator();
+		int queryNumber = 1;
 		
-		//Zapytanie 2 - zapytanie o podmiot i wydobycie z niego informacji
-		executeQuery2(generator.getUsedSubjects().get(0));
-		
-		//Zapytanie 3 - wylistowanie wszystkich obiektow o podanym predykacie
-		executeQuery3("mw:" + generator.getUsedPredicates().get(0));
-		
-		//Zapytanie 4 - Odnalezienie trojki podajac podmiot i predykat
-		executeQuery4(generator.getSubjectAndPredicateFromLastLevel().get(0).first, "mw:" + generator.getSubjectAndPredicateFromLastLevel().get(0).second);
-		
-		//Zapytanie 5 - Odnalezienie trojki podajac predykat i wartosc
-		executeQuery5("mw:przyklad", "wartosc");
-		
-		//Zapytanie 6 - Dodanie do podanego podmiotu trojki
-		executeQuery6();
-		
-	}
-
-	@Override
-	public void setNamespaceName(String ns) {
-		namespaceName = ns;
-	}
-
-	@Override
-	public void setGenerator(ITriplesGenerator g) {
-		generator = g;
+		while(iter.hasNext()) {
+			executeQuery(iter.next(), queryNumber++);
+		}
 	}
 	
-	private void executeQuery1(String subjectName) {
-		String resultStr = "Zapytanie 1: zapytanie o podmiot\n";
+	
+	private void executeQuery(String query, int queryNumber) {
+		String resultStr = "Query " + queryNumber + " - " + query + "\n";
 		
-		try {
+		try{
 			RepositoryConnection con = repository.getConnection();
 			try {
-				String queryString = "SELECT x FROM {x} y {z} WHERE x LIKE \"*" + subjectName + "\" USING NAMESPACE mw = <" + namespaceName + "#>";
-				TupleQuery query = con.prepareTupleQuery(QueryLanguage.SERQL, queryString);
-				TupleQueryResult result = query.evaluate();
+				TupleQuery tupleQuery = con.prepareTupleQuery(QueryLanguage.SERQL, query);
+				TupleQueryResult result = tupleQuery.evaluate();
 				try {
 					while(result.hasNext()) {
-						BindingSet bindingSet = result.next();
-						Value valueOfX = bindingSet.getValue("x");
-						resultStr += ("[" + valueOfX.toString() + "]\n");
+						BindingSet bs = result.next();
+						resultStr += bs.toString() + "\n";
 					}
-				}
-				finally {
+				} finally {
 					result.close();
 				}
 			}
 			finally {
 				con.close();
 			}
-		}
-		catch(OpenRDFException e) {
+		} catch (OpenRDFException e) {
+			System.err.println("Error in executing query.");
 			e.printStackTrace();
 		}
 		
 		queryResults.add(resultStr);
-	}
-	
-	private void executeQuery2(String subjectName) {
-		String resultStr = "Zapytanie 2: zapytanie o podmiot i wydobycie z niego informacji\n";
-		
-		try {
-			RepositoryConnection con = repository.getConnection();
-			try {
-				String queryString = "SELECT x, y, z FROM {x} y {z} WHERE x LIKE \"*" + subjectName + "\" USING NAMESPACE mw = <" + namespaceName + "#>";
-				TupleQuery query = con.prepareTupleQuery(QueryLanguage.SERQL, queryString);
-				TupleQueryResult result = query.evaluate();
-				try {
-					while(result.hasNext()) {
-						BindingSet bindingSet = result.next();
-						Value valueOfX = bindingSet.getValue("x");
-						Value valueOfY = bindingSet.getValue("y");
-						Value valueOfZ = bindingSet.getValue("z");
-						resultStr += ("[" + valueOfX.toString() + ", " + valueOfY.toString() + ", " + valueOfZ.toString() + "]\n");
-					}
-				}
-				finally {
-					result.close();
-				}
-			}
-			finally {
-				con.close();
-			}
-		}
-		catch(OpenRDFException e) {
-			e.printStackTrace();
-		}
-		
-		queryResults.add(resultStr);
-	}
-	
-	private void executeQuery3(String predicateName) {
-		String resultStr = "Zapytanie 3: wylistowanie wszystkich obiektow o podanym predykacie\n";
-		
-		try {
-			RepositoryConnection con = repository.getConnection();
-			try {
-				String queryString = "SELECT x, y FROM {x} " + predicateName + " {y} USING NAMESPACE mw = <" + namespaceName + "#>";
-				TupleQuery query = con.prepareTupleQuery(QueryLanguage.SERQL, queryString);
-				TupleQueryResult result = query.evaluate();
-				try {
-					while(result.hasNext()) {
-						BindingSet bindingSet = result.next();
-						Value valueOfX = bindingSet.getValue("x");
-						Value valueOfY = bindingSet.getValue("y");
-						resultStr += (valueOfX.toString() + " " + valueOfY.toString() + "\n");
-					}
-				}
-				finally {
-					result.close();
-				}
-			}
-			finally {
-				con.close();
-			}
-		}
-		catch(OpenRDFException e) {
-			e.printStackTrace();
-		}
-		
-		queryResults.add(resultStr);
-	}
-	
-	private void executeQuery4(String subjectName, String predicateName) {
-		String resultStr = "Zapytanie 4: Odnalezienie trojki podajac podmiot i predykat\n";
-		
-		try {
-			RepositoryConnection con = repository.getConnection();
-			try {
-				String queryString = "SELECT x, y FROM {x} " + predicateName + " {y} WHERE x LIKE \"*" + subjectName + "\" USING NAMESPACE mw = <" + namespaceName + "#>";
-				TupleQuery query = con.prepareTupleQuery(QueryLanguage.SERQL, queryString);
-				TupleQueryResult result = query.evaluate();
-				try {
-					while(result.hasNext()) {
-						BindingSet bindingSet = result.next();
-						Value valueOfX = bindingSet.getValue("x");
-						Value valueOfY = bindingSet.getValue("y");
-						resultStr += (valueOfX.toString() + " " + valueOfY.toString() + "\n");
-					}
-				}
-				finally {
-					result.close();
-				}
-			}
-			finally {
-				con.close();
-			}
-		}
-		catch(OpenRDFException e) {
-			e.printStackTrace();
-		}
-		
-		queryResults.add(resultStr);
-	}
-	
-	private void executeQuery5(String predicateName, String valueName) {
-		String resultStr = "Zapytanie 5: Odnalezienie trojki podajac predykat i wartosc\n";
-		
-		try {
-			RepositoryConnection con = repository.getConnection();
-			try {
-				String queryString = "SELECT x FROM {x} " + predicateName + " {y} WHERE y LIKE \"" + valueName + "\" USING NAMESPACE mw = <" + namespaceName + "#>";
-				TupleQuery query = con.prepareTupleQuery(QueryLanguage.SERQL, queryString);
-				TupleQueryResult result = query.evaluate();
-				try {
-					while(result.hasNext()) {
-						BindingSet bindingSet = result.next();
-						Value valueOfX = bindingSet.getValue("x");
-						resultStr += (valueOfX.toString() + "\n");
-					}
-				}
-				finally {
-					result.close();
-				}
-			}
-			finally {
-				con.close();
-			}
-		}
-		catch(OpenRDFException e) {
-			e.printStackTrace();
-		}
-		
-		queryResults.add(resultStr);
-	}
-	
-	private void executeQuery6() {
-		
 	}
 	
 }
