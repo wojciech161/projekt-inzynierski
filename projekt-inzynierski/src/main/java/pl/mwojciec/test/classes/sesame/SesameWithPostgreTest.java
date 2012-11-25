@@ -19,13 +19,15 @@ import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFParseException;
-import org.openrdf.sail.nativerdf.NativeStore;
+import org.openrdf.sail.SailException;
+import org.openrdf.sail.rdbms.postgresql.PgSqlStore;
 
 import pl.mwojciec.test.interfaces.ITest;
 
 public class SesameWithPostgreTest implements ITest {
 	
 	private Repository repository;
+	private PgSqlStore pgSQLstore;
 	
 	//Kontenery do raportow
 	private List<String> loadTimeReport = new ArrayList<String>();
@@ -37,20 +39,23 @@ public class SesameWithPostgreTest implements ITest {
 	private List<String> queryList = new ArrayList<String>();
 	
 	public SesameWithPostgreTest() {
-		// TODO Auto-generated constructor stub
-	}
-	
-	public void loadRepository() {
-		File dataDir = new File("SesameNativeDB/");
-		repository = new SailRepository(new NativeStore(dataDir));
+		
+		pgSQLstore = new PgSqlStore("sesametest");
+		pgSQLstore.setUser("marcin");
+		pgSQLstore.setPassword("password");
+		
+		repository = new SailRepository(pgSQLstore);
 		
 		try {
 			repository.initialize();
 		} catch (RepositoryException e) {
-			System.err.println("Blad przy inicjalizacji Sesame Native");
+			System.err.println("Blad przy inicjalizacji Sesame PostgreSQL");
 			e.printStackTrace();
 		}
-		
+	}
+	
+	public void loadRepository() {
+
 		File rdfFile = new File("Triples.rdf");
 		String baseURI = "http://www.mwojciec.pl#";
 		
@@ -179,4 +184,19 @@ public class SesameWithPostgreTest implements ITest {
 		queryResults.add(resultStr);
 	}
 
+	protected void finalize() {
+		try {
+			repository.shutDown();
+		} catch (RepositoryException e) {
+			System.out.println("Error in shutting down repository");
+			e.printStackTrace();
+		}
+		
+		try {
+			pgSQLstore.shutDown();
+		} catch (SailException e) {
+			System.out.println("Error in shutting down repository");
+			e.printStackTrace();
+		}
+	}
 }

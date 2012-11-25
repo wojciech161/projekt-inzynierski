@@ -19,13 +19,15 @@ import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.sail.SailRepository;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFParseException;
-import org.openrdf.sail.nativerdf.NativeStore;
+import org.openrdf.sail.SailException;
+import org.openrdf.sail.rdbms.mysql.MySqlStore;
 
 import pl.mwojciec.test.interfaces.ITest;
 
 public class SesameWithMySQLTest implements ITest {
 
-	private Repository repository;
+	Repository repository;
+	MySqlStore mySQLStore;
 	
 	//Kontenery do raportow
 	private List<String> loadTimeReport = new ArrayList<String>();
@@ -37,19 +39,28 @@ public class SesameWithMySQLTest implements ITest {
 	private List<String> queryList = new ArrayList<String>();
 	
 	public SesameWithMySQLTest() {
-		// TODO Auto-generated constructor stub
-	}
-	
-	public void loadRepository() {
-		File dataDir = new File("SesameNativeDB/");
-		repository = new SailRepository(new NativeStore(dataDir));
+		
+		System.out.println("Sesame with MySQL test");
+		
+		System.out.println("Initializing repository");
+		
+		mySQLStore = new MySqlStore("ONTOLOGY_DB");
+		mySQLStore.setUser("ontology");
+		mySQLStore.setPassword("password");
+		
+		repository = new SailRepository(mySQLStore);
 		
 		try {
 			repository.initialize();
 		} catch (RepositoryException e) {
-			System.err.println("Blad przy inicjalizacji Sesame Native");
+			System.out.println("Error in initializing repository");
 			e.printStackTrace();
 		}
+		
+		System.out.println("Initializing finished");
+	}
+	
+	public void loadRepository() {
 		
 		File rdfFile = new File("Triples.rdf");
 		String baseURI = "http://www.mwojciec.pl#";
@@ -177,6 +188,22 @@ public class SesameWithMySQLTest implements ITest {
 		}
 		
 		queryResults.add(resultStr);
+		System.out.println(queryResults);
+	}
+	
+	protected void finalize() {
+		try {
+			repository.shutDown();
+		} catch (RepositoryException e) {
+			System.out.println("Error in shutdown repository");
+			e.printStackTrace();
+		}
+		try {
+			mySQLStore.shutDown();
+		} catch (SailException e) {
+			System.out.println("Error in shutdown MySQLStore Sail");
+			e.printStackTrace();
+		}
 	}
 
 }

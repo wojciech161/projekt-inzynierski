@@ -39,6 +39,10 @@ public class JenaInMemoryTest implements ITest {
 	
 	public void loadRepository() {
 		
+		System.out.println(Runtime.getRuntime().totalMemory()); // w bajtach
+		
+		long start = System.nanoTime();
+		
 		InputStream in = FileManager.get().open("Triples.rdf");
 		
 		if ( in == null ) {
@@ -46,6 +50,13 @@ public class JenaInMemoryTest implements ITest {
 		}
 		
 		model.read(in, null);
+		
+		long elapsedNs = System.nanoTime() - start;
+		
+		System.out.println("Zajelo " + elapsedNs + "ns."); // 1s = 10^9ns
+		System.out.println("W sekundach: " + ((double)elapsedNs/1000000000) + "s.");
+		
+		System.out.println(Runtime.getRuntime().totalMemory()); //w bajtach
 		
 	}
 
@@ -137,7 +148,6 @@ public class JenaInMemoryTest implements ITest {
 		ResultSet results = qe.execSelect();
 		
 		resultString += ResultSetFormatter.asText(results, query);
-		System.out.println(resultString);
 		
 		queryResults.add(resultString);
 		

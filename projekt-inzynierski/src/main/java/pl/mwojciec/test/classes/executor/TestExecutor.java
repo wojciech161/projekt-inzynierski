@@ -4,8 +4,12 @@ import java.io.File;
 
 import pl.mwojciec.generator.classes.RDFWithNodesGenerator;
 import pl.mwojciec.generator.interfaces.ITriplesGenerator;
+import pl.mwojciec.test.classes.allegrograph.AllegroGraphNativeTest;
+import pl.mwojciec.test.classes.bigdata.BigDataNativeWithSesameTest;
 import pl.mwojciec.test.classes.jena.JenaInMemoryTest;
-import pl.mwojciec.test.classes.jena.JenaWithMySQLTest;
+import pl.mwojciec.test.classes.owlim.OWLIMNativeWithSesameTest;
+import pl.mwojciec.test.classes.sesame.SesameWithMySQLTest;
+import pl.mwojciec.test.classes.virtuoso.VirtuosoNativeWithSesame;
 import pl.mwojciec.test.interfaces.ITest;
 
 public class TestExecutor {
@@ -35,13 +39,41 @@ public class TestExecutor {
 		test.setQueriesFile(new File("SparqlQueries.txt"));
 		test.executeQueries();
 		
-		//Jena with MySQL test
-		System.out.println("Test Jena MySQL");
-		test = new JenaWithMySQLTest();
+		//AlegroGraph test
+		test = new AllegroGraphNativeTest();
 		test.loadRepository();
 		test.setQueriesFile(new File("SparqlQueries.txt"));
 		test.executeQueries();
 		
+		//Virtuoso with Jena
+		test = new VirtuosoNativeWithSesame();
+		test.loadRepository();
+		test.setQueriesFile(new File("SparqlQueries.txt"));
+		test.executeQueries();
+		
+		//BigData
+		test = new BigDataNativeWithSesameTest();
+		test.loadRepository();
+		test.setQueriesFile(new File("SparqlQueries.txt"));
+		test.executeQueries();
+		
+		//owlim
+		test = new OWLIMNativeWithSesameTest();
+		test.loadRepository();
+		test.setQueriesFile(new File("SerqlQueries.txt"));
+		test.executeQueries();
+		
+		//Virtuoso sesame
+		test = new VirtuosoNativeWithSesame();
+		test.loadRepository();
+		test.setQueriesFile(new File("SparqlQueries.txt"));
+		test.executeQueries();
+		
+		// Sesame Mysql
+		test = new SesameWithMySQLTest();
+		test.loadRepository();
+		test.setQueriesFile(new File("SerqlQueries.txt"));
+		test.executeQueries();
 	}
 	
 	public String getReport() {
