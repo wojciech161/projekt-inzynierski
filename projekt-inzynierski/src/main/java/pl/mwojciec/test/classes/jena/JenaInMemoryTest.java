@@ -16,6 +16,9 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.update.UpdateAction;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateRequest;
 import com.hp.hpl.jena.util.FileManager;
 
 import pl.mwojciec.test.interfaces.ITest;
@@ -34,30 +37,43 @@ public class JenaInMemoryTest implements ITest {
 	private List<String> queryList = new ArrayList<String>();
 	
 	public JenaInMemoryTest() {
+		System.out.println("Jena InMemory Test");
+		System.out.println("Initializing");
+		
 		model = ModelFactory.createDefaultModel();
+		loadTimeReport.add("Jena InMemory Test - Load time report");
+		memoryUsageReport.add("Jena InMemory Test - Memory usage report");
+		queryTimeReport.add("Jena InMemory Test - Query time report");
+		queryResults.add("Jena InMemory Test - Query results");
+		
+		System.out.println("initialization finished");
 	}
 	
 	public void loadRepository() {
 		
-		System.out.println(Runtime.getRuntime().totalMemory()); // w bajtach
+		System.out.println("Loading repository");
 		
-		long start = System.nanoTime();
+		long memoryStart = Runtime.getRuntime().totalMemory(); 	// w bajtach
+		long timeStart = System.nanoTime();						// w nanosekundach
 		
 		InputStream in = FileManager.get().open("Triples.rdf");
 		
 		if ( in == null ) {
-			System.err.println("Plik RDF z trojkami nie zostal znaleziony!");
+			System.err.println("RDF file not found");
 		}
 		
 		model.read(in, null);
 		
-		long elapsedNs = System.nanoTime() - start;
+		long elapsedTimeInNs = System.nanoTime() - timeStart;
 		
-		System.out.println("Zajelo " + elapsedNs + "ns."); // 1s = 10^9ns
-		System.out.println("W sekundach: " + ((double)elapsedNs/1000000000) + "s.");
+		System.out.println("Loading finished");
 		
-		System.out.println(Runtime.getRuntime().totalMemory()); //w bajtach
+		double elapsedTimeInSeconds = (double)elapsedTimeInNs/1000000000;
+		long usedMemoryInBytes = Runtime.getRuntime().totalMemory() - memoryStart;
+		double usedMemoryInMegabytes = (double)usedMemoryInBytes / 1024 / 1024;
 		
+		loadTimeReport.add("Loading time: " + elapsedTimeInSeconds + " seconds");
+		memoryUsageReport.add("Used memory: " + usedMemoryInMegabytes + "MB");
 	}
 
 	public String getLoadTimeReport() {
@@ -99,30 +115,33 @@ public class JenaInMemoryTest implements ITest {
 		}
 	}
 
-	public String getQueryTimeReport(int queryNumber) {
-		return queryTimeReport.get(queryNumber);
-	}
-
-	public String getqueryResult(int queryNumber) {
-		return queryResults.get(queryNumber);
-	}
-
-	public String getAllQueriesTimeReport() {
+	public String getqueryResult() {
 		String result = new String();
-		int queryNumber = 1;
 		
-		Iterator<String> iter = queryTimeReport.iterator();
+		Iterator<String> iter = queryResults.iterator();
 		
 		while( iter.hasNext() ) {
-			String resNum = "Zapytanie " + queryNumber + "\n";
-			result += resNum + iter.next() + "\n";
-			++queryNumber;
+			result += iter.next() + "\n";
 		}
 		
 		return result;
 	}
 
-	public void setQueriesFile(File queries) {
+	public String getAllQueriesTimeReport() {
+		String result = new String();
+		
+		Iterator<String> iter = queryTimeReport.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
+	}
+
+	public void setQueriesFile() {
+		
+		File queries = new File("SparqlQueries.txt");
 		
 		try {
 			Scanner input = new Scanner(queries);
@@ -141,17 +160,35 @@ public class JenaInMemoryTest implements ITest {
 	
 	private void executeQuery(String queryString, int queryNumber) {
 		String resultString = "Query " + queryNumber + " - " + queryString + "\n";
+		System.out.print(resultString);
 		
-		Query query = QueryFactory.create(queryString);
+		long queryTime = 0;
+		long queryStartTime = System.nanoTime();
 		
-		QueryExecution qe = QueryExecutionFactory.create(query, model);
-		ResultSet results = qe.execSelect();
+		if(queryString.contains("SELECT")) {
+			Query query = QueryFactory.create(queryString);
+			QueryExecution qe = QueryExecutionFactory.create(query, model);
+			ResultSet results = qe.execSelect();
+			queryTime = System.nanoTime() - queryStartTime;
+			resultString += ResultSetFormatter.asText(results, query);
+			qe.close();
+			
+		}
+		else if(queryString.contains("CONSTRUCT")) {
+			Query query = QueryFactory.create(queryString);
+			QueryExecution qe = QueryExecutionFactory.create(query, model);
+			qe.execConstruct();
+			qe.close();
+		}
+		else if (queryString.contains("INSERT") || queryString.contains("DELETE")) {
+			UpdateRequest ur = UpdateFactory.create(queryString);
+			UpdateAction.execute(ur.getOperations().get(0), model);
+		}
 		
-		resultString += ResultSetFormatter.asText(results, query);
+		double queryTimeInSeconds = (double)queryTime/1000000000;
+		queryTimeReport.add("Query " + queryNumber + " - " + queryString + " - " + queryTimeInSeconds + "s");
 		
 		queryResults.add(resultString);
-		
-		qe.close();
 	}
 	
 }

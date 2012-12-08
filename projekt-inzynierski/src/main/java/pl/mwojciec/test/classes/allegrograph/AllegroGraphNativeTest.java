@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.openrdf.query.BindingSet;
+import org.openrdf.query.GraphQuery;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQuery;
@@ -54,6 +55,7 @@ public class AllegroGraphNativeTest implements ITest {
 	public AllegroGraphNativeTest() {
 		
 		System.out.println("AllegroGraph Native test");
+		System.out.println("Initializing framework");
 		
 		server = new AGServer(SERVER_URL, USERNAME, PASSWORD);
 		try {
@@ -83,6 +85,11 @@ public class AllegroGraphNativeTest implements ITest {
 		
 		model = new AGModel(maker.getGraph());
 		
+		loadTimeReport.add("AllegroGraph Native test - Load time report");
+		memoryUsageReport.add("AllegroGraph Native test - Memory usage report");
+		queryTimeReport.add("AllegroGraph Native test - Query time report");
+		queryResults.add("AllegroGraph Native test - Query results");
+		
 		System.out.println("Initialization done");
 	}
 	
@@ -90,15 +97,27 @@ public class AllegroGraphNativeTest implements ITest {
 	public void loadRepository() {
 		System.out.println("Loading repository");
 		
+		long memoryStart = Runtime.getRuntime().totalMemory(); 	// w bajtach
+		long timeStart = System.nanoTime();						// w nanosekundach
+		
 		try {
 			model.read(new FileInputStream("Triples.rdf"), "http://example.org");
 		} catch (FileNotFoundException e) {
-			System.out.println("Nie znaleziono pliku z trojkami");
+			System.out.println("File with triples not found");
 			e.printStackTrace();
 		}
 		
 		System.out.println("Loading finished.");
 
+		long elapsedTimeInNs = System.nanoTime() - timeStart;
+		
+		double elapsedTimeInSeconds = (double)elapsedTimeInNs/1000000000;
+		long usedMemoryInBytes = Runtime.getRuntime().totalMemory() - memoryStart;
+		double usedMemoryInMegabytes = (double)usedMemoryInBytes / 1024 / 1024;
+		
+		loadTimeReport.add("Loading time: " + elapsedTimeInSeconds + " seconds");
+		memoryUsageReport.add("Used memory: " + usedMemoryInMegabytes + "MB");
+		
 		System.out.println("After loading, model contains " + model.size() 
 				+ " triples in graph '" + model.getGraph().getName() + "'.");
 	}
@@ -130,7 +149,10 @@ public class AllegroGraphNativeTest implements ITest {
 	}
 
 	@Override
-	public void setQueriesFile(File queries) {
+	public void setQueriesFile() {
+		
+		File queries = new File("SparqlQueries.txt");
+		
 		try {
 			Scanner input = new Scanner(queries);
 			
@@ -157,26 +179,26 @@ public class AllegroGraphNativeTest implements ITest {
 	}
 
 	@Override
-	public String getQueryTimeReport(int queryNumber) {
-		return queryTimeReport.get(queryNumber);
-	}
-
-	@Override
-	public String getqueryResult(int queryNumber) {
-		return queryResults.get(queryNumber);
+	public String getqueryResult() {
+		String results = "";
+		
+		Iterator<String> iter = queryResults.iterator();
+		
+		while( iter.hasNext() ) {
+			results += iter.next() + "\n";
+		}
+		
+		return results;
 	}
 
 	@Override
 	public String getAllQueriesTimeReport() {
 		String result = new String();
-		int queryNumber = 1;
 		
 		Iterator<String> iter = queryTimeReport.iterator();
 		
 		while( iter.hasNext() ) {
-			String resNum = "Query: " + queryNumber + "\n";
-			result += resNum + iter.next() + "\n";
-			++queryNumber;
+			result += iter.next() + "\n";
 		}
 		
 		return result;
@@ -184,22 +206,45 @@ public class AllegroGraphNativeTest implements ITest {
 	
 	private void executeQuery(String queryString, int queryNumber) {
 		
-		System.out.println("Query " + queryNumber + " - " + queryString);
-		
 		String resultStr = "Query " + queryNumber + " - " + queryString + "\n";
+		System.out.print(resultStr);
 		
-		TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+		long queryTime = 0;
+		long queryStartTime = System.nanoTime();
+		
 		try {
-			TupleQueryResult result = tupleQuery.evaluate();
-			while(result.hasNext()) {
-				BindingSet bindingSet = result.next();
-				resultStr += bindingSet.toString() + "\n";
+			
+			if(queryString.contains("SELECT")) {
+				
+				TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+				tupleQuery.setIncludeInferred(true /* includeInferred */);
+				TupleQueryResult result = tupleQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+	            while( result.hasNext() ) {
+	            	BindingSet bindingSet = result.next();
+	            	resultStr += bindingSet.toString() + "\n";
+	            }
+			} else if (queryString.contains("CONSTRUCT")) {
+				GraphQuery graphQuery = conn.prepareGraphQuery(QueryLanguage.SPARQL, queryString);
+				graphQuery.setIncludeInferred(true);
+				graphQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+			} else if(queryString.contains("INSERT") || queryString.contains("DELETE")) {
+				conn.prepareUpdate(QueryLanguage.SPARQL, queryString);
+				conn.commit();
 			}
-			result.close();
+            
 		} catch (QueryEvaluationException e) {
-			System.out.println("Error when executing a query");
+			System.out.println("Error in evaluating query");
+			e.printStackTrace();
+		} catch (RepositoryException e) {
 			e.printStackTrace();
 		}
+		
+		double queryTimeInSeconds = (double)queryTime/1000000000;
+		queryTimeReport.add("Query " + queryNumber + " - " + queryString + " - " + queryTimeInSeconds + "s");
 		
 		queryResults.add(resultStr);
 		

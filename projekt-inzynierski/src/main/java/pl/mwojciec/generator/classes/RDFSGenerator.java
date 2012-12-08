@@ -80,7 +80,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 		subjects = maxNumberOfTriples;
 		predicates = maxNumberOfTriples / 10;
 		values = maxNumberOfTriples * maxTriplesInOneSubject;
-		subclasses = numberOfClasses * maxNumberOfSubclasses * maxInheritLevel;
+		subclasses = numberOfClasses * maxNumberOfSubclasses * maxInheritLevel * maxInheritLevel * maxInheritLevel;
 		comments = numberOfClasses * subclasses * maxInheritLevel;
 		labels = numberOfClasses * subclasses * maxInheritLevel;
 		
@@ -119,7 +119,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			subjectsInput.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z podmiotami nie został znaleziony");
+			System.out.println("File with subjects not found.");
 			e.printStackTrace();
 		}
 		
@@ -135,7 +135,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z predykatami nie został znaleziony");
+			System.out.println("File with predicates not found");
 			e.printStackTrace();
 		}
 		
@@ -151,7 +151,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z wartosciami nie został znaleziony");
+			System.out.println("File with values not found");
 			e.printStackTrace();
 		}
 		
@@ -167,7 +167,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z klasami nie został znaleziony");
+			System.out.println("File with classes not found");
 			e.printStackTrace();
 		}
 		
@@ -183,7 +183,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z podklasami nie został znaleziony");
+			System.out.println("File with subclasses not found");
 			e.printStackTrace();
 		}
 		
@@ -199,7 +199,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z labelami nie został znaleziony");
+			System.out.println("File with labels not found");
 			e.printStackTrace();
 		}
 		
@@ -215,7 +215,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z komentarzami nie został znaleziony");
+			System.out.println("File with comments not found");
 			e.printStackTrace();
 		}
 	}
@@ -297,7 +297,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
-			System.out.println("Nie moge utworzyc pliku z trojkami!");
+			System.out.println("Error in creating RDF file");
 			e.printStackTrace();
 		}
 		
@@ -306,7 +306,7 @@ public class RDFSGenerator implements ITriplesGenerator {
 		try {
 			output = new PrintWriter(file);
 		} catch (FileNotFoundException e) {
-			System.out.println("nie moge otworzyc pliku z trojkami do zapisu!");
+			System.out.println("Error in saving RDF file");
 			e.printStackTrace();
 		}
 		
@@ -378,17 +378,25 @@ public class RDFSGenerator implements ITriplesGenerator {
 		//Zamkniecie pliku
 		output.close();
 		
-		report = "Wygenerowano " + addedTriples + " trojek, " + addedSubjects + " podmiotow, " + addedClasses + " klas.";
+		report = "Generated " + addedTriples + " triples, " + addedSubjects + " subjects, " + addedClasses + " classes.";
 	}
 	
 	public void generate() {
 		if(checkData()) {
 			
+			System.out.println("Generating dictionary...");
+			
 			generateDictionary();
+			
+			System.out.println("Generating dictionary finished.");
 			
 			getDictionary();
 			
+			System.out.println("Generating RDF file...");
+			
 			generateRDF();
+			
+			System.out.println("Generating RDF file finished");
 			
 		}
 

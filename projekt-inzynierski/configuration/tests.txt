@@ -1,0 +1,9 @@
+SesameNative
+//SesameWithMySQL
+//SesameWithPostgre
+BigDataNativeWithSesame
+AllegroGraphNative
+OWLIMNativeWithSesame
+VirtuosoNativeWithSesame
+JenaInMemory
+SesameInMemory

@@ -10,13 +10,13 @@ class Variation {
 
 	//Parametry
 	private int wordLength;		//Dlugosc slowa w permutacji
-	private int wordCount;		//Ilosc slow
-	private File file;			//Plik do ktorego zapisac dane
-	private char wordEnding;	//Koncowka kazdego slowa
+	private int wordCount;			//Ilosc slow
+	private File file;				//Plik do ktorego zapisac dane
+	private char wordEnding;		//Koncowka kazdego slowa
 	
 	//Zmienne pomocnicze
-	private int currentGeneratedWordNumber = 0;						// Wskazuje na ilosc dotychczas wygenerowanych slow
-	private LinkedList<Integer> value = new LinkedList<Integer>();			// Lista generowanych wariacji liczb calkowitych
+	private int currentGeneratedWordNumber = 0;								// Wskazuje na ilosc dotychczas wygenerowanych slow
+	private LinkedList<Integer> value = new LinkedList<Integer>();				// Lista generowanych wariacji liczb calkowitych
 	private LinkedList<String> generatedStrings = new LinkedList<String>();	// Lista wygenerowanych slow
 	
 	//Konstruktor ustawiajacy wszystkie parametry klasy

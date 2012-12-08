@@ -8,8 +8,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
-import org.openrdf.OpenRDFException;
 import org.openrdf.query.BindingSet;
+import org.openrdf.query.GraphQuery;
+import org.openrdf.query.MalformedQueryException;
+import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQuery;
 import org.openrdf.query.TupleQueryResult;
@@ -36,16 +38,33 @@ public class SesameInMemoryTest implements ITest {
 	//Zapytania
 	private List<String> queryList = new ArrayList<String>();
 	
-	public void loadRepository() {
+	public SesameInMemoryTest() {
+		System.out.println("Sesame InMemory test");
+		System.out.println("Initializing repository");
 		
 		repository = new SailRepository(new MemoryStore());
 		
 		try {
 			repository.initialize();
 		} catch (RepositoryException e) {
-			System.out.println("Nie udalo sie zainicjalizowac repozytorium sesame");
+			System.out.println("Unable to initialize Sesame repository.");
 			e.printStackTrace();
 		}
+		
+		loadTimeReport.add("Sesame InMemory test - Load time report");
+		memoryUsageReport.add("Sesame InMemory test - Memory usage report");
+		queryTimeReport.add("Sesame InMemory test - Query time report");
+		queryResults.add("Sesame InMemory test - Query results");
+		
+		System.out.println("Initializing finished");
+	}
+	
+	public void loadRepository() {
+		
+		System.out.println("Loading repository");
+		
+		long memoryStart = Runtime.getRuntime().totalMemory(); 	// w bajtach
+		long timeStart = System.nanoTime();		
 		
 		File rdfFile = new File("Triples.rdf");
 		String baseURI = "http://www.mwojciec.pl#";
@@ -55,13 +74,11 @@ public class SesameInMemoryTest implements ITest {
 			
 			try {
 				con.add(rdfFile, baseURI, RDFFormat.RDFXML);
-				
-				System.out.println("Repozytorium pomyslnie zaladowane!");
 			} catch (RDFParseException e) {
-				System.out.println("Blad przy parsowaniu pliku RDF");
+				System.out.println("RDF Parse error");
 				e.printStackTrace();
 			} catch (IOException e) {
-				System.out.println("Nie moge uzyskac dostepu do pliku!");
+				System.out.println("RDF file not found");
 				e.printStackTrace();
 			}
 			finally {
@@ -69,9 +86,20 @@ public class SesameInMemoryTest implements ITest {
 			}
 			
 		} catch (RepositoryException e) {
-			System.out.println("Nie udalo sie polaczyc z repozytorium sesame");
+			System.out.println("Repository connexction error");
 			e.printStackTrace();
 		}
+		
+		System.out.println("Loading finished.");
+
+		long elapsedTimeInNs = System.nanoTime() - timeStart;
+		
+		double elapsedTimeInSeconds = (double)elapsedTimeInNs/1000000000;
+		long usedMemoryInBytes = Runtime.getRuntime().totalMemory() - memoryStart;
+		double usedMemoryInMegabytes = (double)usedMemoryInBytes / 1024 / 1024;
+		
+		loadTimeReport.add("Loading time: " + elapsedTimeInSeconds + " seconds");
+		memoryUsageReport.add("Used memory: " + usedMemoryInMegabytes + "MB");
 		
 	}
 
@@ -108,30 +136,33 @@ public class SesameInMemoryTest implements ITest {
 		}
 	}
 
-	public String getQueryTimeReport(int queryNumber) {
-		return queryTimeReport.get(queryNumber);
-	}
-
-	public String getqueryResult(int queryNumber) {
-		return queryResults.get(queryNumber);
-	}
-
-	public String getAllQueriesTimeReport() {
+	public String getqueryResult() {
 		String result = new String();
-		int queryNumber = 1;
 		
-		Iterator<String> iter = queryTimeReport.iterator();
+		Iterator<String> iter = queryResults.iterator();
 		
 		while( iter.hasNext() ) {
-			String resNum = "Zapytanie " + queryNumber + "\n";
-			result += resNum + iter.next() + "\n";
-			++queryNumber;
+			result += iter.next() + "\n";
 		}
 		
 		return result;
 	}
 
-	public void setQueriesFile(File queries) {
+	public String getAllQueriesTimeReport() {
+		String result = new String();
+		
+		Iterator<String> iter = queryTimeReport.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
+	}
+
+	public void setQueriesFile() {
+		
+		File queries = new File("SparqlQueries.txt");
 		
 		try {
 			Scanner input = new Scanner(queries);
@@ -148,32 +179,61 @@ public class SesameInMemoryTest implements ITest {
 		
 	}
 	
-	private void executeQuery(String query, int queryNumber) {
-		String resultStr = "Query " + queryNumber + " - " + query + "\n";
+	private void executeQuery(String queryString, int queryNumber) {
+		String resultStr = "Query " + queryNumber + " - " + queryString + "\n";
+		System.out.print(resultStr);
 		
-		try{
-			RepositoryConnection con = repository.getConnection();
-			try {
-				TupleQuery tupleQuery = con.prepareTupleQuery(QueryLanguage.SERQL, query);
+		RepositoryConnection connection = null;
+		try {
+			connection = repository.getConnection();
+		} catch (RepositoryException e1) {
+			e1.printStackTrace();
+		}
+		
+		long queryTime = 0;
+		long queryStartTime = System.nanoTime();
+		
+		try {
+			
+			if(queryString.contains("SELECT")) {
+				
+				TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+				tupleQuery.setIncludeInferred(true /* includeInferred */);
 				TupleQueryResult result = tupleQuery.evaluate();
-				try {
-					while(result.hasNext()) {
-						BindingSet bs = result.next();
-						resultStr += bs.toString() + "\n";
-					}
-				} finally {
-					result.close();
-				}
+				queryTime = System.nanoTime() - queryStartTime;
+				
+	            while( result.hasNext() ) {
+	            	BindingSet bindingSet = result.next();
+	            	resultStr += bindingSet.toString() + "\n";
+	            }
+			} else if (queryString.contains("CONSTRUCT")) {
+				GraphQuery graphQuery = connection.prepareGraphQuery(QueryLanguage.SPARQL, queryString);
+				graphQuery.setIncludeInferred(true);
+				graphQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+			} else if(queryString.contains("INSERT") || queryString.contains("DELETE")) {
+				connection.prepareUpdate(QueryLanguage.SPARQL, queryString);
+				connection.commit();
 			}
-			finally {
-				con.close();
-			}
-		} catch (OpenRDFException e) {
-			System.err.println("Error in executing query.");
+            
+		} catch (MalformedQueryException e) {
+			System.out.println("Malformed query - syntax error");
+			e.printStackTrace();
+		} catch (RepositoryException e) {
+			System.out.println("Error with repository");
+			e.printStackTrace();
+		} catch (QueryEvaluationException e) {
+			System.out.println("Error in evaluating query");
 			e.printStackTrace();
 		}
 		
+		double queryTimeInSeconds = (double)queryTime/1000000000;
+		queryTimeReport.add("Query " + queryNumber + " - " + queryString + " - " + queryTimeInSeconds + "s");
+		
 		queryResults.add(resultStr);
+		
+		System.out.println("Query execution finished");
 	}
 
 }

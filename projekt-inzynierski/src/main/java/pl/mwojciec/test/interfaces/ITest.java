@@ -1,7 +1,5 @@
 package pl.mwojciec.test.interfaces;
 
-import java.io.File;
-
 public interface ITest {
 
 	// Funkcje ladujace plik z trojkami, raporty czasu ladowania i zajetosci
@@ -10,10 +8,9 @@ public interface ITest {
 	String getMemoryLoadReport();
 	
 	//Funkcja wykonujaca zapytania
-	void setQueriesFile(File queries);
+	void setQueriesFile();
 	void executeQueries();
-	String getQueryTimeReport(int queryNumber);
-	String getqueryResult(int queryNumber);
+	String getqueryResult();
 	String getAllQueriesTimeReport();
 	
 }

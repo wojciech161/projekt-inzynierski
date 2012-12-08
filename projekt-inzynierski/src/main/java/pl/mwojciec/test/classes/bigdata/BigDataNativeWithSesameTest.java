@@ -21,6 +21,7 @@ import org.openrdf.rio.RDFParseException;
 import com.bigdata.rdf.sail.BigdataSail;
 import com.bigdata.rdf.sail.BigdataSailRepository;
 import com.bigdata.rdf.sail.BigdataSailRepositoryConnection;
+import org.openrdf.query.GraphQuery;
 
 import pl.mwojciec.test.interfaces.ITest;
 
@@ -41,6 +42,9 @@ public class BigDataNativeWithSesameTest implements ITest {
 	
 	public BigDataNativeWithSesameTest() {
 		
+		System.out.println("BigData with Sesame test");
+		System.out.println("Initialization");
+		
 		sail = new BigdataSail();
 		repository = new BigdataSailRepository(sail);
 		
@@ -52,10 +56,22 @@ public class BigDataNativeWithSesameTest implements ITest {
 			System.out.println("Cannot initialize BigDataSailRepository");
 			e.printStackTrace();
 		}
+		
+		loadTimeReport.add("BigData with Sesame test - Load time report");
+		memoryUsageReport.add("BigData with Sesame test - Memory usage report");
+		queryTimeReport.add("BigData with Sesame test - Query time report");
+		queryResults.add("BigData with Sesame test - Query results");
+		
+		System.out.println("Initialization finished");
 	}
 	
 	@Override
 	public void loadRepository() {
+		
+		System.out.println("Loading repository");
+		
+		long memoryStart = Runtime.getRuntime().totalMemory(); 	// w bajtach
+		long timeStart = System.nanoTime();		
 		
 		File rdfFile = new File("Triples.rdf");
 		String baseURI = "http://www.mwojciec.pl#";
@@ -69,6 +85,17 @@ public class BigDataNativeWithSesameTest implements ITest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		System.out.println("Loading finished.");
+
+		long elapsedTimeInNs = System.nanoTime() - timeStart;
+		
+		double elapsedTimeInSeconds = (double)elapsedTimeInNs/1000000000;
+		long usedMemoryInBytes = Runtime.getRuntime().totalMemory() - memoryStart;
+		double usedMemoryInMegabytes = (double)usedMemoryInBytes / 1024 / 1024;
+		
+		loadTimeReport.add("Loading time: " + elapsedTimeInSeconds + " seconds");
+		memoryUsageReport.add("Used memory: " + usedMemoryInMegabytes + "MB");
 	}
 
 	@Override
@@ -98,7 +125,10 @@ public class BigDataNativeWithSesameTest implements ITest {
 	}
 
 	@Override
-	public void setQueriesFile(File queries) {
+	public void setQueriesFile() {
+		
+		File queries = new File("SparqlQueries.txt");
+		
 		try {
 			Scanner input = new Scanner(queries);
 			
@@ -125,26 +155,26 @@ public class BigDataNativeWithSesameTest implements ITest {
 	}
 
 	@Override
-	public String getQueryTimeReport(int queryNumber) {
-		return queryTimeReport.get(queryNumber);
-	}
-
-	@Override
-	public String getqueryResult(int queryNumber) {
-		return queryResults.get(queryNumber);
+	public String getqueryResult() {
+		String result = new String();
+		
+		Iterator<String> iter = queryResults.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
 	}
 
 	@Override
 	public String getAllQueriesTimeReport() {
 		String result = new String();
-		int queryNumber = 1;
 		
 		Iterator<String> iter = queryTimeReport.iterator();
 		
 		while( iter.hasNext() ) {
-			String resNum = "Zapytanie " + queryNumber + "\n";
-			result += resNum + iter.next() + "\n";
-			++queryNumber;
+			result += iter.next() + "\n";
 		}
 		
 		return result;
@@ -152,30 +182,52 @@ public class BigDataNativeWithSesameTest implements ITest {
 	
 	private void executeQuery(String queryString, int queryNumber) {
 		String resultStr = "Query " + queryNumber + " - " + queryString + "\n";
+		System.out.print(resultStr);
 		
-			try {
+		long queryTime = 0;
+		long queryStartTime = System.nanoTime();
+		
+		try {
+			
+			if(queryString.contains("SELECT")) {
+				
 				TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
 				tupleQuery.setIncludeInferred(true /* includeInferred */);
-	            TupleQueryResult result = tupleQuery.evaluate();
-	            
+				TupleQueryResult result = tupleQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
 	            while( result.hasNext() ) {
 	            	BindingSet bindingSet = result.next();
 	            	resultStr += bindingSet.toString() + "\n";
 	            }
-	            
-			} catch (MalformedQueryException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (RepositoryException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (QueryEvaluationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} else if (queryString.contains("CONSTRUCT")) {
+				GraphQuery graphQuery = connection.prepareGraphQuery(QueryLanguage.SPARQL, queryString);
+				graphQuery.setIncludeInferred(true);
+				graphQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+			} else if(queryString.contains("INSERT") || queryString.contains("DELETE")) {
+				connection.prepareUpdate(QueryLanguage.SPARQL, queryString);
+				connection.commit();
 			}
+            
+		} catch (MalformedQueryException e) {
+			System.out.println("Malformed query - syntax error");
+			e.printStackTrace();
+		} catch (RepositoryException e) {
+			System.out.println("Error with repository");
+			e.printStackTrace();
+		} catch (QueryEvaluationException e) {
+			System.out.println("Error in evaluating query");
+			e.printStackTrace();
+		}
+		
+		double queryTimeInSeconds = (double)queryTime/1000000000;
+		queryTimeReport.add("Query " + queryNumber + " - " + queryString + " - " + queryTimeInSeconds + "s");
 		
 		queryResults.add(resultStr);
-		System.out.println(resultStr);
+		
+		System.out.println("Query execution finished");
 	}
 	
 	protected void finalize() {

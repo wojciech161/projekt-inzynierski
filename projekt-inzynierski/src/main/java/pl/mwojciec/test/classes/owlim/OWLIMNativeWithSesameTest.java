@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.openrdf.query.BindingSet;
+import org.openrdf.query.GraphQuery;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
@@ -60,6 +61,11 @@ public class OWLIMNativeWithSesameTest implements ITest {
 			e.printStackTrace();
 		}
 		
+		loadTimeReport.add("OWLIM Native test - Load time report");
+		memoryUsageReport.add("OWLIM Native test - Memory usage report");
+		queryTimeReport.add("OWLIM Native test - Query time report");
+		queryResults.add("OWLIM Native test - Query results");
+		
 		System.out.println("Initialization finished.");
 	}
 	
@@ -67,6 +73,9 @@ public class OWLIMNativeWithSesameTest implements ITest {
 	public void loadRepository() {
 		
 		System.out.println("Loading repository");
+		
+		long memoryStart = Runtime.getRuntime().totalMemory(); 	// w bajtach
+		long timeStart = System.nanoTime();		
 		
 		File rdfFile = new File("Triples.rdf");
 		String baseURI = "http://www.mwojciec.pl#";
@@ -84,7 +93,16 @@ public class OWLIMNativeWithSesameTest implements ITest {
 			e.printStackTrace();
 		}
 		
-		System.out.println("Repository successfully loaded.");
+		System.out.println("Loading finished.");
+
+		long elapsedTimeInNs = System.nanoTime() - timeStart;
+		
+		double elapsedTimeInSeconds = (double)elapsedTimeInNs/1000000000;
+		long usedMemoryInBytes = Runtime.getRuntime().totalMemory() - memoryStart;
+		double usedMemoryInMegabytes = (double)usedMemoryInBytes / 1024 / 1024;
+		
+		loadTimeReport.add("Loading time: " + elapsedTimeInSeconds + " seconds");
+		memoryUsageReport.add("Used memory: " + usedMemoryInMegabytes + "MB");
 		
 	}
 
@@ -115,7 +133,10 @@ public class OWLIMNativeWithSesameTest implements ITest {
 	}
 
 	@Override
-	public void setQueriesFile(File queries) {
+	public void setQueriesFile() {
+	
+		File queries = new File("SparqlQueries.txt");
+		
 		try {
 			Scanner input = new Scanner(queries);
 			
@@ -142,26 +163,27 @@ public class OWLIMNativeWithSesameTest implements ITest {
 	}
 
 	@Override
-	public String getQueryTimeReport(int queryNumber) {
-		return queryTimeReport.get(queryNumber);
-	}
-
-	@Override
-	public String getqueryResult(int queryNumber) {
-		return queryResults.get(queryNumber);
+	public String getqueryResult() {
+		
+		String result = new String();
+		
+		Iterator<String> iter = queryResults.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
 	}
 
 	@Override
 	public String getAllQueriesTimeReport() {
 		String result = new String();
-		int queryNumber = 1;
 		
 		Iterator<String> iter = queryTimeReport.iterator();
 		
 		while( iter.hasNext() ) {
-			String resNum = "Zapytanie " + queryNumber + "\n";
-			result += resNum + iter.next() + "\n";
-			++queryNumber;
+			result += iter.next() + "\n";
 		}
 		
 		return result;
@@ -169,41 +191,52 @@ public class OWLIMNativeWithSesameTest implements ITest {
 	
 	private void executeQuery(String queryString, int queryNumber) {
 		String resultStr = "Query " + queryNumber + " - " + queryString + "\n";
-		System.out.println("Query " + queryNumber + " - " + queryString);
+		System.out.print(resultStr);
 		
-		TupleQuery tupleQuery = null;
+		long queryTime = 0;
+		long queryStartTime = System.nanoTime();
 		
 		try {
-			tupleQuery = connection.prepareTupleQuery(QueryLanguage.SERQL, queryString);
-		} catch (RepositoryException e) {
-			System.out.println("Error in preparing query");
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			System.out.println("Query is wrong(Query syntax error).");
-			e.printStackTrace();
-		}
-		
-		TupleQueryResult result = null;
-		try {
-			result = tupleQuery.evaluate();
-			while(result.hasNext()) {
+			
+			if(queryString.contains("SELECT")) {
 				
-				BindingSet bs = result.next();
-				resultStr += bs.toString() + "\n";
+				TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+				tupleQuery.setIncludeInferred(true /* includeInferred */);
+				TupleQueryResult result = tupleQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+	            while( result.hasNext() ) {
+	            	BindingSet bindingSet = result.next();
+	            	resultStr += bindingSet.toString() + "\n";
+	            }
+			} else if (queryString.contains("CONSTRUCT")) {
+				GraphQuery graphQuery = connection.prepareGraphQuery(QueryLanguage.SPARQL, queryString);
+				graphQuery.setIncludeInferred(true);
+				graphQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+			} else if(queryString.contains("INSERT") || queryString.contains("DELETE")) {
+				connection.prepareUpdate(QueryLanguage.SPARQL, queryString);
+				connection.commit();
 			}
-		} catch (QueryEvaluationException e) {
-			System.out.println("Error in evaluating query.");
+            
+		} catch (MalformedQueryException e) {
+			System.out.println("Malformed query - syntax error");
 			e.printStackTrace();
-		} finally {
-			try {
-				result.close();
-			} catch (QueryEvaluationException e) {
-				System.out.println("Error in closing result");
-				e.printStackTrace();
-			}
+		} catch (RepositoryException e) {
+			System.out.println("Error with repository");
+			e.printStackTrace();
+		} catch (QueryEvaluationException e) {
+			System.out.println("Error in evaluating query");
+			e.printStackTrace();
 		}
+		
+		double queryTimeInSeconds = (double)queryTime/1000000000;
+		queryTimeReport.add("Query " + queryNumber + " - " + queryString + " - " + queryTimeInSeconds + "s");
 		
 		queryResults.add(resultStr);
+		
+		System.out.println("Query execution finished");
 	}
 
 }

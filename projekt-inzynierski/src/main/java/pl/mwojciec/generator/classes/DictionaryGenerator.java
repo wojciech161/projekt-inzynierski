@@ -7,12 +7,12 @@ import pl.mwojciec.generator.interfaces.IDictionaryGenerator;
 
 class DictionaryGenerator implements IDictionaryGenerator{
 
-	private int numberOfSubjects;		// Ile wygenerowac podmiotow
+	private int numberOfSubjects;			// Ile wygenerowac podmiotow
 	private int numberOfPredicates;		// Ile wygenerowac predykatow
-	private int numberOfObjects;		// Ile wygenerowac obiektow
-	private int numberOfClasses;		// Ile wygenerowac klas
+	private int numberOfObjects;			// Ile wygenerowac obiektow
+	private int numberOfClasses;			// Ile wygenerowac klas
 	private int numberOfSubclasses;		// Ile wygenerowac podklas
-	private int numberOfNodes;			// Ile wygenerowac node'ow
+	private int numberOfNodes;				// Ile wygenerowac node'ow
 	private int numberOfLabels;			// Ile wygenerowac node'ow
 	private int numberOfComments;			// Ile wygenerowac node'ow
 	

@@ -85,7 +85,7 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 			subjectsInput.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z podmiotami nie został znaleziony");
+			System.out.println("File with subjects not found");
 			e.printStackTrace();
 		}
 		
@@ -102,7 +102,7 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z predykatami nie został znaleziony");
+			System.out.println("File with predicates not found");
 			e.printStackTrace();
 		}
 		
@@ -119,7 +119,7 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z wartosciami nie został znaleziony");
+			System.out.println("File with values not found");
 			e.printStackTrace();
 		}
 	}
@@ -143,7 +143,7 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
-			System.out.println("Nie moge utworzyc pliku z trojkami!");
+			System.out.println("Error in creating RDF file");
 			e.printStackTrace();
 		}
 		
@@ -152,7 +152,7 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 		try {
 			output = new PrintWriter(file);
 		} catch (FileNotFoundException e) {
-			System.out.println("nie moge otworzyc pliku z trojkami do zapisu!");
+			System.out.println("Error in saving RDF file");
 			e.printStackTrace();
 		}
 		
@@ -205,7 +205,7 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 		//Zamkniecie pliku
 		output.close();
 		
-		report = "Wygenerowano: " + addedTriples + " trojek, podmiotow: " + addedSubjects;
+		report = "Generated: " + addedTriples + " triples, subjects: " + addedSubjects;
 	}
 	
 	//Publiczna funkcja generujaca plik rdf z trojkami
@@ -213,15 +213,19 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 		
 		if( checkData() ) {
 			
-			System.out.println("Generowanie slownika");
+			System.out.println("Generating dictionary...");
+			
 			generateDictionary();
-			System.out.println("Ukonczono generowanie slownika");
+			
+			System.out.println("Generating dictionary finished.");
 			
 			getNames();
 			
-			System.out.println("Generowanie pliku RDF");
+			System.out.println("Generating RDF file...");
+			
 			generateRDFFile();
-			System.out.println("Ukonczono generowanie pliku RDF");
+			
+			System.out.println("Generating RDF file finished");
 			
 		}
 		
@@ -328,7 +332,6 @@ public class SimpleRDFGenerator implements ITriplesGenerator {
 			PrintWriter output = new PrintWriter(sparqlQueriesFile);
 			
 			while(it.hasNext()) {
-				//System.out.println(it.next());
 				output.println(it.next());
 			}
 			

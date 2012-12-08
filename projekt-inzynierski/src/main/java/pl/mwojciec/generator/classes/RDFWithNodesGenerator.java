@@ -18,7 +18,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 
 	// Parametry
 	private int maxNumberOfTriples = 0;					// Maksymalna liczba wygenerowanych trojek, nie liczac trojek w nodach
-	private int maxNumberOfLevels = 0;					// Maksymalna liczba poziomow w grafie
+	private int maxNumberOfLevels = 0;						// Maksymalna liczba poziomow w grafie
 	private int maxNumberOfTriplesInOneSubject = 0;		// Max liczba trojek w 1 podmiocie
 	
 	private String namespaceName = null;
@@ -97,7 +97,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 			subjectsInput.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z podmiotami nie został znaleziony");
+			System.out.println("File with subjects not found");
 			e.printStackTrace();
 		}
 		
@@ -114,7 +114,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z predykatami nie został znaleziony");
+			System.out.println("File with predicates not found");
 			e.printStackTrace();
 		}
 		
@@ -124,8 +124,6 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 		try {
 			Scanner input = new Scanner(valuesFile);
 			
-			System.out.println(objects);
-			
 			for(int i = 0; i < objects; i++) {
 				valueNames[i] = input.nextLine();
 			}
@@ -133,7 +131,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 			input.close();
 			
 		} catch (FileNotFoundException e) {
-			System.out.println("Plik z wartosciami nie został znaleziony");
+			System.out.println("File with values not found");
 			e.printStackTrace();
 		}
 		
@@ -176,7 +174,6 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 						+ namespaceName + ":"
 						+ predicateNames[predicateNumber] + ">\n";
 				numberOfTriplesInsideNodes++;
-				//usedPredicateObjects.add(new Pair<String, String>(name, predicateNames[valueNumber]));
 			}
 			
 			result += RDFSyntax.rdfDescriptionEnding;
@@ -242,7 +239,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 		try {
 			file.createNewFile();
 		} catch (IOException e) {
-			System.out.println("Nie moge utworzyc pliku z trojkami!");
+			System.out.println("Error in creating RDF file");
 			e.printStackTrace();
 		}
 		
@@ -251,7 +248,7 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 		try {
 			output = new PrintWriter(file);
 		} catch (FileNotFoundException e) {
-			System.out.println("nie moge otworzyc pliku z trojkami do zapisu!");
+			System.out.println("Error in saving RDF file");
 			e.printStackTrace();
 		}
 		
@@ -292,18 +289,26 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 	}
 	
 	private void prepareReport() {
-		report = "Wygenerowano " + generatedMainTriples + " trojek, dodatkowo "
-				+ numberOfTriplesInsideNodes + " trojek jako node-y";
+		report = "Generated " + generatedMainTriples + " triples, "
+				+ numberOfTriplesInsideNodes + " as nodes";
 	}
 	
 	public void generate() {
 		if( checkData() ) {
 			
+			System.out.println("Generating dictionary...");
+			
 			generateDictionary();
+			
+			System.out.println("Generating dictionary finished.");
 			
 			getDictionary();
 			
+			System.out.println("Generating RDF file...");
+			
 			generateRDF();
+			
+			System.out.println("Generating RDF file finished");
 			
 			prepareReport();
 		}
@@ -390,7 +395,6 @@ public class RDFWithNodesGenerator implements ITriplesGenerator {
 			PrintWriter output = new PrintWriter(sparqlQueriesFile);
 			
 			while(it.hasNext()) {
-				//System.out.println(it.next());
 				output.println(it.next());
 			}
 			

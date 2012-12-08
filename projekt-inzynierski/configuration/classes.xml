@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+                http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+		<!-- GENERATORY -->
+		
+		<bean name="SimpleRDF" class="pl.mwojciec.generator.classes.SimpleRDFGenerator">
+			<constructor-arg type="int" value="1000"/>
+			<constructor-arg type="int" value="100"/>
+			<constructor-arg type="int" value="1000"/>
+			<constructor-arg type="int" value="50"/>
+			<constructor-arg type="int" value="10"/>
+		</bean>
+		
+		<bean name="RDFWithNodes" class="pl.mwojciec.generator.classes.RDFWithNodesGenerator">
+			<constructor-arg type="int" value="2000"/>
+			<constructor-arg type="int" value="3"/>
+			<constructor-arg type="int" value="5"/>
+		</bean>
+		
+		<bean name="RDFS" class="pl.mwojciec.generator.classes.RDFSGenerator">
+			<constructor-arg type="int" value="10000"/>
+			<constructor-arg type="int" value="30"/>
+			<constructor-arg type="int" value="10"/>
+			<constructor-arg type="int" value="20"/>
+			<constructor-arg type="int" value="3"/>
+		</bean>
+
+		<!-- KLASY TESTOWE -->
+
+        <bean name="JenaInMemory" class="pl.mwojciec.test.classes.jena.JenaInMemoryTest" />
+        
+        <bean name="SesameInMemory" class="pl.mwojciec.test.classes.sesame.SesameInMemoryTest" />
+        <bean name="SesameNative" class="pl.mwojciec.test.classes.sesame.SesameNativeTest" />
+        <bean name="SesameWithMySQL" class="pl.mwojciec.test.classes.sesame.SesameWithMySQLTest" />
+        <bean name="SesameWithPostgre" class="pl.mwojciec.test.classes.sesame.SesameWithPostgreTest" />
+        
+        <bean name="BigDataNativeWithSesame" class="pl.mwojciec.test.classes.bigdata.BigDataNativeWithSesameTest" />
+        
+        <bean name="AllegroGraphNative" class="pl.mwojciec.test.classes.allegrograph.AllegroGraphNativeTest" />
+        
+        <bean name="OWLIMNativeWithSesame" class="pl.mwojciec.test.classes.owlim.OWLIMNativeWithSesameTest" />
+        
+        <bean name="VirtuosoNativeWithSesame" class="pl.mwojciec.test.classes.virtuoso.VirtuosoNativeWithSesame" />
+
+</beans>

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.openrdf.query.BindingSet;
+import org.openrdf.query.GraphQuery;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
@@ -22,10 +23,6 @@ import virtuoso.sesame2.driver.VirtuosoRepository;
 
 public class VirtuosoNativeWithSesame implements ITest {
 
-//	//Parametry
-//	private final String sesameServer = "http://localhost:8080/openrdf-sesame";
-//	private final String repositoryID = "VirtuosoTest";
-	
 	// Zmienne do sesame
 	Repository repository;
 	RepositoryConnection connection;
@@ -58,6 +55,11 @@ public class VirtuosoNativeWithSesame implements ITest {
 			System.out.println("Error in getting connection");
 			e.printStackTrace();
 		}
+		
+		loadTimeReport.add("VirtuosoNative with Sesame Provider test - Load time report");
+		memoryUsageReport.add("VirtuosoNative with Sesame Provider test - Memory usage report");
+		queryTimeReport.add("VirtuosoNative with Sesame Provider test - Query time report");
+		queryResults.add("VirtuosoNative with Sesame Provider test - Query results");
 		
 		System.out.println("Initialization finished");
 	}
@@ -101,7 +103,10 @@ public class VirtuosoNativeWithSesame implements ITest {
 	}
 
 	@Override
-	public void setQueriesFile(File queries) {
+	public void setQueriesFile() {
+		
+		File queries = new File("SparqlQueries.txt");
+		
 		try {
 			Scanner input = new Scanner(queries);
 			
@@ -128,26 +133,26 @@ public class VirtuosoNativeWithSesame implements ITest {
 	}
 
 	@Override
-	public String getQueryTimeReport(int queryNumber) {
-		return queryTimeReport.get(queryNumber);
-	}
-
-	@Override
-	public String getqueryResult(int queryNumber) {
-		return queryResults.get(queryNumber);
+	public String getqueryResult() {
+		String result = new String();
+		
+		Iterator<String> iter = queryResults.iterator();
+		
+		while( iter.hasNext() ) {
+			result += iter.next() + "\n";
+		}
+		
+		return result;
 	}
 
 	@Override
 	public String getAllQueriesTimeReport() {
 		String result = new String();
-		int queryNumber = 1;
 		
 		Iterator<String> iter = queryTimeReport.iterator();
 		
 		while( iter.hasNext() ) {
-			String resNum = "Zapytanie " + queryNumber + "\n";
-			result += resNum + iter.next() + "\n";
-			++queryNumber;
+			result += iter.next() + "\n";
 		}
 		
 		return result;
@@ -155,43 +160,52 @@ public class VirtuosoNativeWithSesame implements ITest {
 	
 	private void executeQuery(String queryString, int queryNumber) {
 		String resultStr = "Query " + queryNumber + " - " + queryString + "\n";
-		System.out.println("Query " + queryNumber + " - " + queryString);
+		System.out.print(resultStr);
 		
-		TupleQuery tupleQuery = null;
+		long queryTime = 0;
+		long queryStartTime = System.nanoTime();
 		
 		try {
-			tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
-		} catch (RepositoryException e) {
-			System.out.println("Error in preparing query");
-			e.printStackTrace();
-		} catch (MalformedQueryException e) {
-			System.out.println("Query is wrong(Query syntax error).");
-			e.printStackTrace();
-		}
-		
-		TupleQueryResult result = null;
-		try {
-			result = tupleQuery.evaluate();
-			while(result.hasNext()) {
+			
+			if(queryString.contains("SELECT")) {
 				
-				BindingSet bs = result.next();
-				resultStr += bs.toString() + "\n";
+				TupleQuery tupleQuery = connection.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
+				tupleQuery.setIncludeInferred(true /* includeInferred */);
+				TupleQueryResult result = tupleQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+	            while( result.hasNext() ) {
+	            	BindingSet bindingSet = result.next();
+	            	resultStr += bindingSet.toString() + "\n";
+	            }
+			} else if (queryString.contains("CONSTRUCT")) {
+				GraphQuery graphQuery = connection.prepareGraphQuery(QueryLanguage.SPARQL, queryString);
+				graphQuery.setIncludeInferred(true);
+				graphQuery.evaluate();
+				queryTime = System.nanoTime() - queryStartTime;
+				
+			} else if(queryString.contains("INSERT") || queryString.contains("DELETE")) {
+				connection.prepareUpdate(QueryLanguage.SPARQL, queryString);
+				connection.commit();
 			}
-		} catch (QueryEvaluationException e) {
-			System.out.println("Error in evaluating query.");
+            
+		} catch (MalformedQueryException e) {
+			System.out.println("Malformed query - syntax error");
 			e.printStackTrace();
-		} finally {
-			try {
-				result.close();
-			} catch (QueryEvaluationException e) {
-				System.out.println("Error in closing result");
-				e.printStackTrace();
-			}
+		} catch (RepositoryException e) {
+			System.out.println("Error with repository");
+			e.printStackTrace();
+		} catch (QueryEvaluationException e) {
+			System.out.println("Error in evaluating query");
+			e.printStackTrace();
 		}
+		
+		double queryTimeInSeconds = (double)queryTime/1000000000;
+		queryTimeReport.add("Query " + queryNumber + " - " + queryString + " - " + queryTimeInSeconds + "s");
 		
 		queryResults.add(resultStr);
 		
-		System.out.println(resultStr);
+		System.out.println("Query execution finished");
 	}
 	
 	protected void finalize() {
@@ -202,5 +216,5 @@ public class VirtuosoNativeWithSesame implements ITest {
 			e.printStackTrace();
 		}
 	}
-
+	
 }
